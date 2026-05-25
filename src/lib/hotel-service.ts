@@ -74,6 +74,15 @@ function nightsBetween(checkIn: string, checkOut: string) {
   return Math.max(1, Math.round((end - start) / 86400000));
 }
 
+function maskReservationForHousekeeping(reservation: ReservationSummary): ReservationSummary {
+  return {
+    ...reservation,
+    guestName: "",
+    guestPhone: "",
+    notes: "",
+  };
+}
+
 async function audit(
   hotelId: string,
   session: Pick<HostedSession, "userId" | "role">,
@@ -819,7 +828,14 @@ export async function loadHousekeepingWork(hotelId: string, session: HostedSessi
     queryReservations(hotelId, "AND r.check_in = $2 AND r.status IN ('pending', 'confirmed')", [today]),
     queryReservations(hotelId, "AND r.check_out = $2 AND r.status = 'checked-in'", [today]),
   ]);
-  return { today, rooms, arrivals, departures, housekeepingTasks: tasks };
+  const assignedRoomIds = new Set(tasks.map((task) => task.roomId));
+  return {
+    today,
+    rooms: rooms.filter((room) => assignedRoomIds.has(room.id)),
+    arrivals: arrivals.filter((reservation) => assignedRoomIds.has(reservation.roomId)).map(maskReservationForHousekeeping),
+    departures: departures.filter((reservation) => assignedRoomIds.has(reservation.roomId)).map(maskReservationForHousekeeping),
+    housekeepingTasks: tasks,
+  };
 }
 
 export async function loadHousekeepingSupervisor(hotelId: string) {

@@ -46,6 +46,7 @@ type DemoStore = {
 
 const orgId = "demo-org";
 const demoClerkOrganizationId = "demo-clerk-org";
+const demoStoreVersion = "full-test-data-2026-05-25";
 
 export function demoIdentityForUser(userId: string) {
   const user = demoUserForId(userId);
@@ -58,7 +59,7 @@ export function demoIdentityForUser(userId: string) {
   };
 }
 
-const demoGlobal = globalThis as typeof globalThis & { __hotelDemoStore?: DemoStore };
+const demoGlobal = globalThis as typeof globalThis & { __hotelDemoStore?: DemoStore; __hotelDemoStoreVersion?: string };
 
 function todayString() {
   return new Date().toISOString().slice(0, 10);
@@ -68,6 +69,10 @@ function tomorrowString() {
   return new Date(Date.now() + 86400000).toISOString().slice(0, 10);
 }
 
+function offsetDateString(days: number) {
+  return new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
+}
+
 function createId(prefix: string) {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -75,6 +80,8 @@ function createId(prefix: string) {
 function initStore(): DemoStore {
   const today = todayString();
   const tomorrow = tomorrowString();
+  const yesterday = offsetDateString(-1);
+  const dayAfterTomorrow = offsetDateString(2);
   const hotels: Hotel[] = [
     { id: "hotel-cove-house", organizationId: orgId, name: "Cove House Hotel", city: "Galveston", state: "TX", timezone: "America/Chicago", active: true },
     { id: "hotel-river-gate", organizationId: orgId, name: "River Gate Inn", city: "San Antonio", state: "TX", timezone: "America/Chicago", active: true },
@@ -103,15 +110,50 @@ function initStore(): DemoStore {
 
   hotels.forEach((hotel, index) => {
     const prefix = index === 0 ? "C" : "R";
+    const staffIds =
+      hotel.id === "hotel-cove-house"
+        ? {
+            manager: "staff-manager",
+            frontDesk: "staff-front-desk",
+            supervisor: "staff-housekeeping-supervisor",
+            ava: "staff-hk-ava",
+            ben: "staff-hk-ben",
+            mia: "staff-hk-mia",
+            noah: "staff-hk-noah",
+            maintenance: "staff-maintenance",
+          }
+        : {
+            manager: `${hotel.id}-manager`,
+            frontDesk: `${hotel.id}-front-desk`,
+            supervisor: `${hotel.id}-housekeeping-supervisor`,
+            ava: `${hotel.id}-hk-ava`,
+            ben: `${hotel.id}-hk-ben`,
+            mia: `${hotel.id}-hk-mia`,
+            noah: `${hotel.id}-hk-noah`,
+            maintenance: `${hotel.id}-maintenance`,
+          };
     rooms[hotel.id] = [
       { id: `${hotel.id}-101`, number: `${prefix}101`, roomType: "King", floor: 1, capacity: 2, nightlyRateCents: 15900, status: "ready" },
       { id: `${hotel.id}-102`, number: `${prefix}102`, roomType: "Double Queen", floor: 1, capacity: 4, nightlyRateCents: 17900, status: "dirty" },
+      { id: `${hotel.id}-103`, number: `${prefix}103`, roomType: "Double Queen", floor: 1, capacity: 4, nightlyRateCents: 17900, status: "cleaning" },
+      { id: `${hotel.id}-104`, number: `${prefix}104`, roomType: "King", floor: 1, capacity: 2, nightlyRateCents: 15900, status: "cleaning" },
+      { id: `${hotel.id}-105`, number: `${prefix}105`, roomType: "Accessible King", floor: 1, capacity: 2, nightlyRateCents: 16900, status: "dirty" },
+      { id: `${hotel.id}-106`, number: `${prefix}106`, roomType: "King", floor: 1, capacity: 2, nightlyRateCents: 15900, status: "available" },
+      { id: `${hotel.id}-107`, number: `${prefix}107`, roomType: "Double Queen", floor: 1, capacity: 4, nightlyRateCents: 17900, status: "dirty" },
       { id: `${hotel.id}-201`, number: `${prefix}201`, roomType: "Suite", floor: 2, capacity: 4, nightlyRateCents: 24900, status: "occupied" },
       { id: `${hotel.id}-202`, number: `${prefix}202`, roomType: "King", floor: 2, capacity: 2, nightlyRateCents: 15900, status: "maintenance" },
+      { id: `${hotel.id}-203`, number: `${prefix}203`, roomType: "Double Queen", floor: 2, capacity: 4, nightlyRateCents: 17900, status: "maintenance" },
+      { id: `${hotel.id}-204`, number: `${prefix}204`, roomType: "Suite", floor: 2, capacity: 4, nightlyRateCents: 25900, status: "maintenance" },
+      { id: `${hotel.id}-301`, number: `${prefix}301`, roomType: "Suite", floor: 3, capacity: 4, nightlyRateCents: 25900, status: "occupied" },
+      { id: `${hotel.id}-302`, number: `${prefix}302`, roomType: "King", floor: 3, capacity: 2, nightlyRateCents: 16900, status: "available" },
     ];
     guests[hotel.id] = [
       { id: `${hotel.id}-guest-1`, fullName: "Jamie Morgan", email: "jamie@example.com", phone: "555-0101", notes: "", createdAt: today },
       { id: `${hotel.id}-guest-2`, fullName: "Taylor Brooks", email: "taylor@example.com", phone: "555-0119", notes: "Late arrival", createdAt: today },
+      { id: `${hotel.id}-guest-3`, fullName: "Priya Shah", email: "priya@example.com", phone: "555-0144", notes: "Prefers high floor", createdAt: today },
+      { id: `${hotel.id}-guest-4`, fullName: "Luis Hernandez", email: "luis@example.com", phone: "555-0172", notes: "Needs invoice copy", createdAt: yesterday },
+      { id: `${hotel.id}-guest-5`, fullName: "Morgan Lee", email: "morgan@example.com", phone: "555-0188", notes: "Company rate", createdAt: yesterday },
+      { id: `${hotel.id}-guest-6`, fullName: "Chen Wu", email: "chen@example.com", phone: "555-0166", notes: "", createdAt: today },
     ];
     reservations[hotel.id] = [
       {
@@ -122,8 +164,8 @@ function initStore(): DemoStore {
         roomId: `${hotel.id}-201`,
         roomNumber: `${prefix}201`,
         roomType: "Suite",
-        checkIn: today,
-        checkOut: tomorrow,
+        checkIn: yesterday,
+        checkOut: today,
         adults: 2,
         children: 0,
         nightlyRateCents: 24900,
@@ -150,35 +192,114 @@ function initStore(): DemoStore {
         status: "confirmed",
         notes: "Late arrival",
       },
+      {
+        id: `${hotel.id}-res-3`,
+        guestId: `${hotel.id}-guest-3`,
+        guestName: "Priya Shah",
+        guestPhone: "555-0144",
+        roomId: `${hotel.id}-106`,
+        roomNumber: `${prefix}106`,
+        roomType: "King",
+        checkIn: today,
+        checkOut: tomorrow,
+        adults: 2,
+        children: 1,
+        nightlyRateCents: 15900,
+        totalCents: 15900,
+        source: "web",
+        status: "pending",
+        notes: "Verify card at arrival",
+      },
+      {
+        id: `${hotel.id}-res-4`,
+        guestId: `${hotel.id}-guest-4`,
+        guestName: "Luis Hernandez",
+        guestPhone: "555-0172",
+        roomId: `${hotel.id}-301`,
+        roomNumber: `${prefix}301`,
+        roomType: "Suite",
+        checkIn: today,
+        checkOut: dayAfterTomorrow,
+        adults: 2,
+        children: 2,
+        nightlyRateCents: 25900,
+        totalCents: 51800,
+        source: "ota",
+        status: "checked-in",
+        notes: "Family stay",
+      },
+      {
+        id: `${hotel.id}-res-5`,
+        guestId: `${hotel.id}-guest-5`,
+        guestName: "Morgan Lee",
+        guestPhone: "555-0188",
+        roomId: `${hotel.id}-302`,
+        roomNumber: `${prefix}302`,
+        roomType: "King",
+        checkIn: tomorrow,
+        checkOut: dayAfterTomorrow,
+        adults: 1,
+        children: 0,
+        nightlyRateCents: 16900,
+        totalCents: 16900,
+        source: "corporate",
+        status: "confirmed",
+        notes: "Company rate",
+      },
+      {
+        id: `${hotel.id}-res-6`,
+        guestId: `${hotel.id}-guest-6`,
+        guestName: "Chen Wu",
+        guestPhone: "555-0166",
+        roomId: `${hotel.id}-102`,
+        roomNumber: `${prefix}102`,
+        roomType: "Double Queen",
+        checkIn: yesterday,
+        checkOut: today,
+        adults: 2,
+        children: 0,
+        nightlyRateCents: 17900,
+        totalCents: 17900,
+        source: "phone",
+        status: "checked-out",
+        notes: "Room ready for turn",
+      },
     ];
     bookingRequests[hotel.id] = [
       { id: `${hotel.id}-request-1`, fullName: "Alex Rivera", phone: "555-0199", email: "alex@example.com", checkIn: tomorrow, checkOut: tomorrow, requestedRoomType: "King", status: "new", message: "Needs quiet room." },
+      { id: `${hotel.id}-request-2`, fullName: "Nia Coleman", phone: "555-0135", email: "nia@example.com", checkIn: tomorrow, checkOut: dayAfterTomorrow, requestedRoomType: "Suite", status: "contacted", message: "Asked about early check-in." },
+      { id: `${hotel.id}-request-3`, fullName: "Owen Park", phone: "555-0182", email: "owen@example.com", checkIn: today, checkOut: tomorrow, requestedRoomType: "Double Queen", status: "declined", message: "No matching rate." },
     ];
-    staff[hotel.id] =
-      hotel.id === "hotel-cove-house"
-        ? [
-            { id: "staff-manager", fullName: "Demo Manager", role: "manager", active: true },
-            { id: "staff-front-desk", fullName: "Demo Front Desk", role: "front-desk", active: true },
-            { id: "staff-housekeeping-supervisor", fullName: "Demo Housekeeping Supervisor", role: "housekeeping-supervisor", active: true },
-            { id: "staff-hk-ava", fullName: "Ava Patel", role: "housekeeping", active: true },
-            { id: "staff-hk-ben", fullName: "Ben Carter", role: "housekeeping", active: true },
-            { id: "staff-hk-mia", fullName: "Mia Nguyen", role: "housekeeping", active: true },
-            { id: "staff-hk-noah", fullName: "Noah Williams", role: "housekeeping", active: true },
-            { id: "staff-maintenance", fullName: "Demo Maintenance", role: "maintenance", active: true },
-          ]
-        : [
-            { id: `${hotel.id}-manager`, fullName: "River Gate Manager", role: "manager", active: true },
-            { id: `${hotel.id}-hk-ava`, fullName: "River Gate Housekeeper", role: "housekeeping", active: true },
-            { id: `${hotel.id}-maintenance`, fullName: "River Gate Maintenance", role: "maintenance", active: true },
-          ];
+    staff[hotel.id] = [
+      { id: staffIds.manager, fullName: hotel.id === "hotel-cove-house" ? "Demo Manager" : "River Gate Manager", role: "manager", active: true },
+      { id: staffIds.frontDesk, fullName: hotel.id === "hotel-cove-house" ? "Demo Front Desk" : "River Gate Front Desk", role: "front-desk", active: true },
+      { id: staffIds.supervisor, fullName: hotel.id === "hotel-cove-house" ? "Demo Housekeeping Supervisor" : "River Gate Housekeeping Supervisor", role: "housekeeping-supervisor", active: true },
+      { id: staffIds.ava, fullName: hotel.id === "hotel-cove-house" ? "Ava Patel" : "River Ava Patel", role: "housekeeping", active: true },
+      { id: staffIds.ben, fullName: hotel.id === "hotel-cove-house" ? "Ben Carter" : "River Ben Carter", role: "housekeeping", active: true },
+      { id: staffIds.mia, fullName: hotel.id === "hotel-cove-house" ? "Mia Nguyen" : "River Mia Nguyen", role: "housekeeping", active: true },
+      { id: staffIds.noah, fullName: hotel.id === "hotel-cove-house" ? "Noah Williams" : "River Noah Williams", role: "housekeeping", active: true },
+      { id: staffIds.maintenance, fullName: hotel.id === "hotel-cove-house" ? "Demo Maintenance" : "River Gate Maintenance", role: "maintenance", active: true },
+    ];
     housekeepingTasks[hotel.id] = [
-      { id: `${hotel.id}-hk-task-1`, roomId: `${hotel.id}-102`, roomNumber: `${prefix}102`, title: "Turn room after checkout", status: "dirty", dueDate: today, notes: "", assigneeStaffId: hotel.id === "hotel-cove-house" ? "staff-hk-ava" : `${hotel.id}-hk-ava`, assigneeName: hotel.id === "hotel-cove-house" ? "Ava Patel" : "River Gate Housekeeper", updatedAt: new Date().toISOString() },
+      { id: `${hotel.id}-hk-task-1`, roomId: `${hotel.id}-102`, roomNumber: `${prefix}102`, title: "Turn room after checkout", status: "dirty", dueDate: today, notes: "", assigneeStaffId: staffIds.ava, assigneeName: staff[hotel.id][3].fullName, updatedAt: new Date().toISOString() },
+      { id: `${hotel.id}-hk-task-2`, roomId: `${hotel.id}-103`, roomNumber: `${prefix}103`, title: "Finish stayover clean", status: "cleaning", dueDate: today, notes: "Supervisor send-back: mirror streaks", assigneeStaffId: staffIds.ava, assigneeName: staff[hotel.id][3].fullName, updatedAt: new Date().toISOString() },
+      { id: `${hotel.id}-hk-task-3`, roomId: `${hotel.id}-104`, roomNumber: `${prefix}104`, title: "Inspect checkout clean", status: "inspection", dueDate: today, notes: "", assigneeStaffId: staffIds.ava, assigneeName: staff[hotel.id][3].fullName, updatedAt: new Date().toISOString() },
+      { id: `${hotel.id}-hk-task-4`, roomId: `${hotel.id}-105`, roomNumber: `${prefix}105`, title: "Hold for maintenance review", status: "blocked", dueDate: today, notes: "Loose towel bar reported by housekeeping", assigneeStaffId: staffIds.mia, assigneeName: staff[hotel.id][5].fullName, updatedAt: new Date().toISOString() },
+      { id: `${hotel.id}-hk-task-5`, roomId: `${hotel.id}-107`, roomNumber: `${prefix}107`, title: "Late checkout turn", status: "dirty", dueDate: today, notes: "", assigneeStaffId: staffIds.ben, assigneeName: staff[hotel.id][4].fullName, updatedAt: new Date().toISOString() },
     ];
     maintenanceTickets[hotel.id] = [
       { id: `${hotel.id}-mt-1`, roomId: `${hotel.id}-202`, roomNumber: `${prefix}202`, title: "HVAC check", priority: "high", status: "open", dueDate: today },
+      { id: `${hotel.id}-mt-2`, roomId: `${hotel.id}-203`, roomNumber: `${prefix}203`, title: "Bathroom sink leak", priority: "medium", status: "in-progress", dueDate: today },
+      { id: `${hotel.id}-mt-3`, roomId: `${hotel.id}-204`, roomNumber: `${prefix}204`, title: "Door lock vendor hold", priority: "critical", status: "blocked", dueDate: tomorrow },
+      { id: `${hotel.id}-mt-4`, roomId: `${hotel.id}-105`, roomNumber: `${prefix}105`, title: "Loose towel bar", priority: "medium", status: "pending-review", dueDate: today },
+      { id: `${hotel.id}-mt-5`, roomId: `${hotel.id}-102`, roomNumber: `${prefix}102`, title: "Remote battery replaced", priority: "low", status: "resolved", dueDate: yesterday },
     ];
     auditLogs[hotel.id] = [
       { id: `${hotel.id}-audit-1`, actorRole: "owner", action: "demo.seed", entityType: "hotel", entityId: hotel.id, createdAt: new Date().toISOString() },
+      { id: `${hotel.id}-audit-2`, actorRole: "front-desk", action: "reservation.status", entityType: "reservation", entityId: `${hotel.id}-res-6`, createdAt: new Date().toISOString() },
+      { id: `${hotel.id}-audit-3`, actorRole: "housekeeping-supervisor", action: "housekeeping.assign", entityType: "housekeeping_task", entityId: `${hotel.id}-hk-task-1`, createdAt: new Date().toISOString() },
+      { id: `${hotel.id}-audit-4`, actorRole: "housekeeping", action: "maintenance.report", entityType: "maintenance_ticket", entityId: `${hotel.id}-mt-4`, createdAt: new Date().toISOString() },
+      { id: `${hotel.id}-audit-5`, actorRole: "maintenance", action: "maintenance.update", entityType: "maintenance_ticket", entityId: `${hotel.id}-mt-2`, createdAt: new Date().toISOString() },
     ];
   });
 
@@ -186,12 +307,16 @@ function initStore(): DemoStore {
 }
 
 function demoStore() {
-  demoGlobal.__hotelDemoStore ??= initStore();
+  if (!demoGlobal.__hotelDemoStore || demoGlobal.__hotelDemoStoreVersion !== demoStoreVersion) {
+    demoGlobal.__hotelDemoStore = initStore();
+    demoGlobal.__hotelDemoStoreVersion = demoStoreVersion;
+  }
   return demoGlobal.__hotelDemoStore;
 }
 
 export function resetDemoStore() {
   demoGlobal.__hotelDemoStore = initStore();
+  demoGlobal.__hotelDemoStoreVersion = demoStoreVersion;
 }
 
 export function demoMembershipsForUser(userId: string) {
@@ -311,6 +436,15 @@ function countRows(rows: { label: string }[]): { label: string; count: number }[
   const counts = new Map<string, number>();
   rows.forEach((row) => counts.set(row.label, (counts.get(row.label) ?? 0) + 1));
   return [...counts].map(([label, count]) => ({ label, count }));
+}
+
+function maskReservationForHousekeeping(reservation: ReservationSummary): ReservationSummary {
+  return {
+    ...reservation,
+    guestName: "",
+    guestPhone: "",
+    notes: "",
+  };
 }
 
 export function demoLoadTodayDesk(hotelId: string): TodayDeskPayload {
@@ -697,8 +831,8 @@ export function demoLoadHousekeepingWork(hotelId: string, session: HostedSession
   return {
     today: payload.today,
     rooms: payload.rooms.filter((room) => assignedRoomIds.has(room.id)),
-    arrivals: payload.arrivals,
-    departures: payload.departures,
+    arrivals: payload.arrivals.filter((reservation) => assignedRoomIds.has(reservation.roomId)).map(maskReservationForHousekeeping),
+    departures: payload.departures.filter((reservation) => assignedRoomIds.has(reservation.roomId)).map(maskReservationForHousekeeping),
     housekeepingTasks,
   };
 }
