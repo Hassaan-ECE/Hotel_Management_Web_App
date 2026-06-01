@@ -16,7 +16,7 @@ export const demoLoginUsers: DemoLoginUser[] = [
     displayName: "Demo Portfolio Owner",
     email: "owner@example.com",
     role: "owner",
-    hotelIds: ["hotel-cove-house", "hotel-river-gate"],
+    hotelIds: ["hotel_realistic_pecos", "hotel_realistic_roswell"],
   },
   {
     code: "1",
@@ -24,7 +24,7 @@ export const demoLoginUsers: DemoLoginUser[] = [
     displayName: "Demo Manager",
     email: "manager@example.com",
     role: "manager",
-    hotelIds: ["hotel-cove-house"],
+    hotelIds: ["hotel_realistic_pecos"],
   },
   {
     code: "2",
@@ -32,7 +32,7 @@ export const demoLoginUsers: DemoLoginUser[] = [
     displayName: "Demo Front Desk",
     email: "frontdesk@example.com",
     role: "front-desk",
-    hotelIds: ["hotel-cove-house"],
+    hotelIds: ["hotel_realistic_pecos"],
   },
   {
     code: "3",
@@ -40,7 +40,7 @@ export const demoLoginUsers: DemoLoginUser[] = [
     displayName: "Demo Housekeeping Supervisor",
     email: "hks@example.com",
     role: "housekeeping-supervisor",
-    hotelIds: ["hotel-cove-house"],
+    hotelIds: ["hotel_realistic_pecos"],
   },
   {
     code: "31",
@@ -48,7 +48,7 @@ export const demoLoginUsers: DemoLoginUser[] = [
     displayName: "Ava Patel",
     email: "ava@example.com",
     role: "housekeeping",
-    hotelIds: ["hotel-cove-house"],
+    hotelIds: ["hotel_realistic_pecos"],
   },
   {
     code: "32",
@@ -56,7 +56,7 @@ export const demoLoginUsers: DemoLoginUser[] = [
     displayName: "Ben Carter",
     email: "ben@example.com",
     role: "housekeeping",
-    hotelIds: ["hotel-cove-house"],
+    hotelIds: ["hotel_realistic_pecos"],
   },
   {
     code: "33",
@@ -64,7 +64,7 @@ export const demoLoginUsers: DemoLoginUser[] = [
     displayName: "Mia Nguyen",
     email: "mia@example.com",
     role: "housekeeping",
-    hotelIds: ["hotel-cove-house"],
+    hotelIds: ["hotel_realistic_pecos"],
   },
   {
     code: "34",
@@ -72,7 +72,7 @@ export const demoLoginUsers: DemoLoginUser[] = [
     displayName: "Noah Williams",
     email: "noah@example.com",
     role: "housekeeping",
-    hotelIds: ["hotel-cove-house"],
+    hotelIds: ["hotel_realistic_pecos"],
   },
   {
     code: "4",
@@ -80,7 +80,7 @@ export const demoLoginUsers: DemoLoginUser[] = [
     displayName: "Demo Maintenance",
     email: "maintenance@example.com",
     role: "maintenance",
-    hotelIds: ["hotel-cove-house"],
+    hotelIds: ["hotel_realistic_pecos"],
   },
 ];
 

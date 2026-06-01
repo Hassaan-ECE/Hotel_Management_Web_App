@@ -2,6 +2,13 @@ import "server-only";
 
 import { isDemoMode } from "@/lib/authz";
 import {
+  isHousekeepingActionAllowed,
+  isMaintenanceCreateStatusAllowed,
+  isMaintenanceTransitionAllowed,
+  isReservationTransitionAllowed,
+  normalizeSearchLimit,
+} from "@/lib/validation";
+import {
   demoApproveHousekeepingRoom,
   demoAssignHousekeepingTask,
   demoApproveRoomIssueReport,
@@ -409,7 +416,7 @@ export async function searchFrontDesk(hotelId: string, query: string, limit = 25
   const trimmed = query.trim();
   if (!trimmed) return { guests: [], reservations: [], rooms: [] };
   const like = `%${trimmed.toLowerCase()}%`;
-  const rowLimit = Math.max(1, Math.min(50, limit));
+  const rowLimit = normalizeSearchLimit(limit);
   const sql = getSql();
   const [guests, rooms, reservations] = await Promise.all([
     sql.query(
@@ -475,14 +482,29 @@ export async function saveGuest(hotelId: string, session: HostedSession, input: 
   if (isDemoMode()) return demoSaveGuest(hotelId, session, input);
   const sql = getSql();
   const now = new Date().toISOString();
-  const id = input.id?.trim() || createId("guest");
+  const id = input.id?.trim();
+  if (id) {
+    const updated = await sql<{ id: string }[]>`
+      UPDATE guests
+      SET full_name = ${input.fullName}, email = ${input.email}, phone = ${input.phone}, notes = ${input.notes}, updated_at = ${now}
+      WHERE id = ${id} AND hotel_id = ${hotelId}
+      RETURNING id
+    `;
+    if (!updated[0]) {
+      throw notFound("Guest was not found for this hotel.");
+    }
+    await audit(hotelId, session, "guest.update", "guest", id, null, { fullName: input.fullName });
+    const guest = (await queryGuests(hotelId, "AND id = $2", [id]))[0];
+    if (!guest) throw notFound("Guest was not found after saving.");
+    return guest;
+  }
+  const newId = createId("guest");
   await sql`
     INSERT INTO guests (id, hotel_id, full_name, email, phone, notes, created_at, updated_at)
-    VALUES (${id}, ${hotelId}, ${input.fullName}, ${input.email}, ${input.phone}, ${input.notes}, ${now}, ${now})
-    ON CONFLICT (id) DO UPDATE SET full_name = EXCLUDED.full_name, email = EXCLUDED.email, phone = EXCLUDED.phone, notes = EXCLUDED.notes, updated_at = EXCLUDED.updated_at
+    VALUES (${newId}, ${hotelId}, ${input.fullName}, ${input.email}, ${input.phone}, ${input.notes}, ${now}, ${now})
   `;
-  await audit(hotelId, session, input.id ? "guest.update" : "guest.create", "guest", id, null, { fullName: input.fullName });
-  const guest = (await queryGuests(hotelId, "AND id = $2", [id]))[0];
+  await audit(hotelId, session, "guest.create", "guest", newId, null, { fullName: input.fullName });
+  const guest = (await queryGuests(hotelId, "AND id = $2", [newId]))[0];
   if (!guest) throw notFound("Guest was not found after saving.");
   return guest;
 }
@@ -549,15 +571,18 @@ export async function createWalkInReservation(hotelId: string, session: HostedSe
   if (["occupied", "maintenance"].includes(room.status)) throw badRequest("Room is not available for a walk-in.");
 
   const now = new Date().toISOString();
-  const guestId = input.guestId?.trim() || createId("guest");
+  const suppliedGuestId = input.guestId?.trim();
   const reservationId = createId("res");
   const totalCents = nightsBetween(input.checkIn, input.checkOut) * input.nightlyRateCents;
+  const guestId = suppliedGuestId || createId("guest");
 
-  if (input.guestId) {
-    await sql`
+  if (suppliedGuestId) {
+    const rows = await sql<{ id: string }[]>`
       UPDATE guests SET full_name = ${input.fullName}, email = ${input.email}, phone = ${input.phone}, notes = ${input.guestNotes}, updated_at = ${now}
-      WHERE id = ${guestId} AND hotel_id = ${hotelId}
+      WHERE id = ${suppliedGuestId} AND hotel_id = ${hotelId}
+      RETURNING id
     `;
+    if (!rows[0]) throw notFound("Guest was not found for this hotel.");
   } else {
     await sql`
       INSERT INTO guests (id, hotel_id, full_name, email, phone, notes, created_at, updated_at)
@@ -582,6 +607,10 @@ export async function updateReservationStatus(hotelId: string, session: HostedSe
   `;
   const current = rows[0];
   if (!current) throw notFound("Reservation was not found for this hotel.");
+  if (!isReservationTransitionAllowed(current.status, status)) {
+    throw badRequest(`Cannot change reservation from "${current.status}" to "${status}".`);
+  }
+  if (current.status === status) return;
   const now = new Date().toISOString();
   await sql`UPDATE reservations SET status = ${status}, updated_at = ${now} WHERE id = ${reservationId} AND hotel_id = ${hotelId}`;
   if (status === "checked-in") {
@@ -652,6 +681,9 @@ async function housekeepingTaskForRoom(hotelId: string, roomId: string, staffUse
 export async function startHousekeepingRoom(hotelId: string, session: HostedSession, roomId: string) {
   if (isDemoMode()) return demoStartHousekeepingRoom(hotelId, session, roomId);
   const task = await housekeepingTaskForRoom(hotelId, roomId, session.role === "housekeeping" ? session.userId : undefined);
+  if (!isHousekeepingActionAllowed(task.status, "start")) {
+    throw badRequest(`Cannot start housekeeping when task is "${task.status}".`);
+  }
   const now = new Date().toISOString();
   const sql = getSql();
   await sql`UPDATE housekeeping_tasks SET status = 'cleaning', updated_at = ${now} WHERE id = ${task.id} AND hotel_id = ${hotelId}`;
@@ -662,6 +694,9 @@ export async function startHousekeepingRoom(hotelId: string, session: HostedSess
 export async function finishHousekeepingRoom(hotelId: string, session: HostedSession, roomId: string) {
   if (isDemoMode()) return demoFinishHousekeepingRoom(hotelId, session, roomId);
   const task = await housekeepingTaskForRoom(hotelId, roomId, session.role === "housekeeping" ? session.userId : undefined);
+  if (!isHousekeepingActionAllowed(task.status, "finish")) {
+    throw badRequest(`Cannot finish housekeeping when task is "${task.status}".`);
+  }
   const now = new Date().toISOString();
   const sql = getSql();
   await sql`UPDATE housekeeping_tasks SET status = 'inspection', updated_at = ${now} WHERE id = ${task.id} AND hotel_id = ${hotelId}`;
@@ -671,6 +706,9 @@ export async function finishHousekeepingRoom(hotelId: string, session: HostedSes
 export async function approveHousekeepingRoom(hotelId: string, session: HostedSession, roomId: string) {
   if (isDemoMode()) return demoApproveHousekeepingRoom(hotelId, session, roomId);
   const task = await housekeepingTaskForRoom(hotelId, roomId);
+  if (!isHousekeepingActionAllowed(task.status, "approve")) {
+    throw badRequest(`Cannot approve housekeeping when task is "${task.status}".`);
+  }
   const now = new Date().toISOString();
   const sql = getSql();
   await sql`UPDATE housekeeping_tasks SET status = 'ready', notes = '', updated_at = ${now} WHERE id = ${task.id} AND hotel_id = ${hotelId}`;
@@ -681,6 +719,9 @@ export async function approveHousekeepingRoom(hotelId: string, session: HostedSe
 export async function sendBackHousekeepingRoom(hotelId: string, session: HostedSession, roomId: string, reason: string) {
   if (isDemoMode()) return demoSendBackHousekeepingRoom(hotelId, session, roomId, reason);
   const task = await housekeepingTaskForRoom(hotelId, roomId);
+  if (!isHousekeepingActionAllowed(task.status, "send-back")) {
+    throw badRequest(`Cannot send back housekeeping when task is "${task.status}".`);
+  }
   const now = new Date().toISOString();
   const sql = getSql();
   await sql`UPDATE housekeeping_tasks SET status = 'dirty', notes = ${reason}, updated_at = ${now} WHERE id = ${task.id} AND hotel_id = ${hotelId}`;
@@ -697,6 +738,9 @@ export async function createMaintenanceTicket(hotelId: string, session: HostedSe
   const id = input.id?.trim() || createId("mt");
   const existingRows = await sql<{ id: string }[]>`SELECT id FROM maintenance_tickets WHERE id = ${id} AND hotel_id = ${hotelId} LIMIT 1`;
   if (existingRows[0]) return updateMaintenanceTicket(hotelId, session, id, input);
+  if (!isMaintenanceCreateStatusAllowed(input.status)) {
+    throw badRequest("New maintenance tickets can only be created with status open, in-progress, or blocked.");
+  }
   await sql`
     INSERT INTO maintenance_tickets (id, hotel_id, room_id, title, priority, status, due_date, created_at, updated_at)
     VALUES (${id}, ${hotelId}, ${input.roomId}, ${input.title}, ${input.priority}, ${input.status}, ${input.dueDate}, ${now}, ${now})
@@ -714,9 +758,18 @@ export async function updateMaintenanceTicket(hotelId: string, session: HostedSe
   const ticketRows = await queryMaintenance(hotelId, "AND mt.id = $2", [ticketId]);
   const existing = ticketRows[0];
   if (!existing) throw notFound("Maintenance ticket was not found for this hotel.");
+  if (existing.status === "pending-review") {
+    throw badRequest("Pending issue reports must be approved or cancelled through the issue review workflow.");
+  }
+  if (!isMaintenanceTransitionAllowed(existing.status, input.status)) {
+    throw badRequest(`Cannot change maintenance status from "${existing.status}" to "${input.status}".`);
+  }
 
   const roomRows = await sql<{ id: string }[]>`SELECT id FROM rooms WHERE id = ${input.roomId} AND hotel_id = ${hotelId} LIMIT 1`;
   if (!roomRows[0]) throw notFound("Room was not found for this hotel.");
+  if ((existing.status === "resolved" || existing.status === "cancelled") && input.status === existing.status && existing.roomId !== input.roomId) {
+    throw badRequest("Closed maintenance tickets cannot be moved to another room.");
+  }
 
   const now = new Date().toISOString();
   await sql`

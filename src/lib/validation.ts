@@ -1,9 +1,63 @@
 import { z } from "zod";
+import type { MaintenanceStatus, ReservationStatus } from "@/lib/types";
 
 export const reservationStatusSchema = z.enum(["pending", "confirmed", "checked-in", "checked-out", "cancelled"]);
 export const roomStatusSchema = z.enum(["available", "occupied", "dirty", "cleaning", "maintenance", "ready"]);
 export const maintenancePrioritySchema = z.enum(["low", "medium", "high", "critical"]);
 export const maintenanceStatusSchema = z.enum(["pending-review", "open", "in-progress", "blocked", "resolved", "cancelled"]);
+export const housekeepingStatusSchema = z.enum(["dirty", "cleaning", "inspection", "blocked", "ready"]);
+
+export type HousekeepingAction = "start" | "finish" | "approve" | "send-back";
+
+export function isReservationTransitionAllowed(current: ReservationStatus, next: ReservationStatus) {
+  if (current === next) return true;
+  const allowed: Record<ReservationStatus, ReservationStatus[]> = {
+    pending: ["confirmed", "checked-in", "cancelled"],
+    confirmed: ["checked-in", "cancelled"],
+    "checked-in": ["checked-out"],
+    "checked-out": [],
+    cancelled: [],
+  };
+  return allowed[current].includes(next);
+}
+
+export function isHousekeepingActionAllowed(currentStatus: string, action: HousekeepingAction) {
+  const requiredStatus: Record<HousekeepingAction, string> = {
+    start: "dirty",
+    finish: "cleaning",
+    approve: "inspection",
+    "send-back": "inspection",
+  };
+  return currentStatus === requiredStatus[action];
+}
+
+export function isMaintenanceCreateStatusAllowed(status: MaintenanceStatus) {
+  return status === "open" || status === "in-progress" || status === "blocked";
+}
+
+export function isMaintenanceTransitionAllowed(current: MaintenanceStatus, next: MaintenanceStatus) {
+  if (current === "pending-review" || next === "pending-review") return false;
+  if (current === next) return true;
+  if (current === "resolved" || current === "cancelled") return false;
+  return isMaintenanceCreateStatusAllowed(current) && (isMaintenanceCreateStatusAllowed(next) || next === "resolved" || next === "cancelled");
+}
+
+export function normalizeSearchLimit(value: unknown): number {
+  const fallback = 25;
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return fallback;
+    value = Number(trimmed);
+  }
+  if (typeof value !== "number") return fallback;
+  if (!Number.isFinite(value)) return fallback;
+
+  const truncated = Math.trunc(value);
+  if (truncated < 1) return 1;
+  if (truncated > 50) return 50;
+  return truncated;
+}
 
 export const demoLoginSchema = z.object({
   code: z.string().trim().min(1),
@@ -43,7 +97,7 @@ export const roomStatusInputSchema = z.object({
 export const housekeepingInputSchema = z.object({
   roomId: z.string().trim().min(1),
   title: z.string().trim().min(2),
-  status: z.string().trim().min(2),
+  status: housekeepingStatusSchema,
   dueDate: z.string().trim().min(8),
 });
 

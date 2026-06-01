@@ -17,6 +17,8 @@ export default async function SignInPage() {
   if (!isClerkConfigured()) {
     return <SetupPanel clerkConfigured={false} databaseConfigured={isDatabaseConfigured()} />;
   }
+  const identity = await getIdentity();
+  if (identity) redirect("/portfolio");
   return (
     <div className="page-shell">
       <AppTopbar />
@@ -25,7 +27,14 @@ export default async function SignInPage() {
           <p className="eyebrow">Staff invitation</p>
           <h1>Sign in</h1>
           <p className="muted">Only invited owner and staff accounts can access hotel workspaces.</p>
-          <SignIn routing="path" path="/sign-in" signUpUrl="" />
+          <SignIn
+            routing="path"
+            path="/sign-in"
+            forceRedirectUrl="/portfolio"
+            fallbackRedirectUrl="/portfolio"
+            signUpUrl=""
+            withSignUp={false}
+          />
         </section>
       </main>
     </div>

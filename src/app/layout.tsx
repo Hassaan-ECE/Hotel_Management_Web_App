@@ -1,12 +1,6 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
-import { Geist_Mono } from "next/font/google";
 import "./globals.css";
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Hotel Management Web App",
@@ -18,7 +12,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   const body = <body>{children}</body>;
 
   return (
-    <html lang="en" className={geistMono.variable}>
+    <html lang="en">
       {publishableKey ? <ClerkProvider publishableKey={publishableKey}>{body}</ClerkProvider> : body}
     </html>
   );

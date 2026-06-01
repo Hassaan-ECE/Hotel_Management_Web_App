@@ -18,6 +18,8 @@ bun install
 bun run dev
 ```
 
+For production-grade hosted environment setup, including demo/staging/production mode behavior and Vercel variables, see [`docs/project-management/hosted-environment-setup.md`](docs/project-management/hosted-environment-setup.md).
+
 You can run the app without Clerk or Neon during development. If either Clerk or Neon is not configured and `HOTEL_APP_DEMO_MODE` is not set to `false`, the app uses the local fake login page and in-memory sample hotel data.
 
 Demo login accepts the same desktop prototype codes plus an owner code for the hosted portfolio:

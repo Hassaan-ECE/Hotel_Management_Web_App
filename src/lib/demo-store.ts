@@ -28,8 +28,15 @@ import type {
   WalkInInput,
 } from "@/lib/types";
 import { badRequest, forbidden, notFound } from "@/lib/errors";
+import {
+  isHousekeepingActionAllowed,
+  isMaintenanceCreateStatusAllowed,
+  isMaintenanceTransitionAllowed,
+  isReservationTransitionAllowed,
+} from "@/lib/validation";
 import { demoLoginUsers, demoUserForId } from "@/lib/demo-users";
 import { roleAllowed } from "@/lib/roles";
+import { realisticHotelFixtures, type RealisticHotelFixture } from "@/db/realistic-hotel-fixtures";
 
 type DemoStore = {
   hotels: Hotel[];
@@ -46,7 +53,7 @@ type DemoStore = {
 
 const orgId = "demo-org";
 const demoClerkOrganizationId = "demo-clerk-org";
-const demoStoreVersion = "full-test-data-2026-05-25";
+const demoStoreVersion = "realistic-hotel-fixtures-2026-05-25";
 
 export function demoIdentityForUser(userId: string) {
   const user = demoUserForId(userId);
@@ -77,7 +84,175 @@ function createId(prefix: string) {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function demoStaffForHotel(hotelId: string, hotelIndex: number): StaffMember[] {
+  const primary = hotelIndex === 0;
+  const staffIds = primary
+    ? {
+        manager: "staff-manager",
+        frontDesk: "staff-front-desk",
+        supervisor: "staff-housekeeping-supervisor",
+        ava: "staff-hk-ava",
+        ben: "staff-hk-ben",
+        mia: "staff-hk-mia",
+        noah: "staff-hk-noah",
+        maintenance: "staff-maintenance",
+      }
+    : {
+        manager: `${hotelId}_staff_manager`,
+        frontDesk: `${hotelId}_staff_front_desk`,
+        supervisor: `${hotelId}_staff_housekeeping_supervisor`,
+        ava: `${hotelId}_staff_hk_ava`,
+        ben: `${hotelId}_staff_hk_ben`,
+        mia: `${hotelId}_staff_hk_mia`,
+        noah: `${hotelId}_staff_hk_noah`,
+        maintenance: `${hotelId}_staff_maintenance`,
+      };
+
+  const hotelLabel = primary ? "Pecos" : "Roswell";
+  return [
+    { id: staffIds.manager, fullName: `${hotelLabel} Demo Manager`, role: "manager", active: true },
+    { id: staffIds.frontDesk, fullName: `${hotelLabel} Front Desk`, role: "front-desk", active: true },
+    { id: staffIds.supervisor, fullName: `${hotelLabel} Housekeeping Supervisor`, role: "housekeeping-supervisor", active: true },
+    { id: staffIds.ava, fullName: primary ? "Ava Patel" : "Roswell Ava Patel", role: "housekeeping", active: true },
+    { id: staffIds.ben, fullName: primary ? "Ben Carter" : "Roswell Ben Carter", role: "housekeeping", active: true },
+    { id: staffIds.mia, fullName: primary ? "Mia Nguyen" : "Roswell Mia Nguyen", role: "housekeeping", active: true },
+    { id: staffIds.noah, fullName: primary ? "Noah Williams" : "Roswell Noah Williams", role: "housekeeping", active: true },
+    { id: staffIds.maintenance, fullName: `${hotelLabel} Maintenance`, role: "maintenance", active: true },
+  ];
+}
+
+function buildRealisticDemoHotel(fixture: RealisticHotelFixture, hotelIndex: number, store: Omit<DemoStore, "memberships" | "hotels">) {
+  const hotelId = fixture.hotel.id;
+  const now = new Date().toISOString();
+  store.rooms[hotelId] = fixture.rooms.map((room) => ({
+    id: room.id,
+    number: room.number,
+    roomType: room.roomType,
+    floor: room.floor,
+    capacity: room.capacity,
+    nightlyRateCents: room.nightlyRateCents,
+    status: room.currentAppStatus,
+  }));
+  store.guests[hotelId] = fixture.guests.map((guest) => ({
+    ...guest,
+    createdAt: todayString(),
+  }));
+
+  const guestById = new Map(store.guests[hotelId].map((guest) => [guest.id, guest]));
+  const roomById = new Map(store.rooms[hotelId].map((room) => [room.id, room]));
+  store.reservations[hotelId] = fixture.reservations.map((reservation) => {
+    const guest = guestById.get(reservation.guestId);
+    const room = roomById.get(reservation.roomId);
+    if (!guest || !room) throw new Error(`Invalid realistic fixture reference for ${reservation.id}.`);
+    return {
+      id: reservation.id,
+      guestId: reservation.guestId,
+      guestName: guest.fullName,
+      guestPhone: guest.phone,
+      roomId: reservation.roomId,
+      roomNumber: room.number,
+      roomType: room.roomType,
+      checkIn: offsetDateString(reservation.checkInOffsetDays),
+      checkOut: offsetDateString(reservation.checkOutOffsetDays),
+      adults: reservation.adults,
+      children: reservation.children,
+      nightlyRateCents: reservation.nightlyRateCents,
+      totalCents: reservation.totalCents,
+      source: reservation.source,
+      status: reservation.status,
+      notes: reservation.notes,
+    };
+  });
+
+  store.bookingRequests[hotelId] = fixture.bookingRequests.map((request) => ({
+    id: request.id,
+    fullName: request.fullName,
+    email: request.email,
+    phone: request.phone,
+    checkIn: offsetDateString(request.checkInOffsetDays),
+    checkOut: offsetDateString(request.checkOutOffsetDays),
+    requestedRoomType: request.requestedRoomType,
+    status: request.status,
+    message: request.message,
+  }));
+  store.staff[hotelId] = demoStaffForHotel(hotelId, hotelIndex);
+  const housekeepers = store.staff[hotelId].filter((member) => member.role === "housekeeping");
+  store.housekeepingTasks[hotelId] = fixture.housekeepingTasks.map((task, index) => {
+    const assignee = housekeepers[index % housekeepers.length] ?? null;
+    return {
+      id: task.id,
+      roomId: task.roomId,
+      roomNumber: task.roomNumber,
+      title: task.title,
+      status: task.status,
+      dueDate: offsetDateString(task.dueOffsetDays),
+      notes: task.notes,
+      assigneeStaffId: assignee?.id ?? null,
+      assigneeName: assignee?.fullName ?? null,
+      updatedAt: now,
+    };
+  });
+  store.maintenanceTickets[hotelId] = fixture.maintenanceTickets.map((ticket) => ({
+    id: ticket.id,
+    roomId: ticket.roomId,
+    roomNumber: ticket.roomNumber,
+    title: ticket.title,
+    priority: ticket.priority,
+    status: ticket.status,
+    dueDate: offsetDateString(ticket.dueOffsetDays),
+  }));
+  store.auditLogs[hotelId] = [
+    { id: `${hotelId}_audit_realistic_seed`, actorRole: "owner", action: "demo.seed.realistic", entityType: "hotel", entityId: hotelId, createdAt: now },
+    {
+      id: `${hotelId}_audit_realistic_payments`,
+      actorRole: "manager",
+      action: "fixture.payments.available",
+      entityType: "payment_fixture",
+      entityId: hotelId,
+      createdAt: now,
+    },
+  ];
+}
+
+function initRealisticStore(): DemoStore {
+  const hotels: Hotel[] = realisticHotelFixtures.map((fixture) => ({
+    id: fixture.hotel.id,
+    organizationId: orgId,
+    name: fixture.hotel.name,
+    city: fixture.hotel.city,
+    state: fixture.hotel.state,
+    timezone: fixture.hotel.timezone,
+    active: true,
+  }));
+  const memberships: HotelMembership[] = demoLoginUsers.flatMap((user) =>
+    user.hotelIds.map((hotelId) => ({
+      id: `member-${hotelId}-${user.userId}`,
+      organizationId: orgId,
+      hotelId,
+      clerkUserId: user.userId,
+      displayName: user.displayName,
+      email: user.email,
+      role: user.role,
+      active: true,
+    })),
+  );
+  const store: Omit<DemoStore, "memberships" | "hotels"> = {
+    rooms: {},
+    guests: {},
+    reservations: {},
+    bookingRequests: {},
+    housekeepingTasks: {},
+    staff: {},
+    maintenanceTickets: {},
+    auditLogs: {},
+  };
+  realisticHotelFixtures.forEach((fixture, index) => buildRealisticDemoHotel(fixture, index, store));
+  return { hotels, memberships, ...store };
+}
+
 function initStore(): DemoStore {
+  if (realisticHotelFixtures.length > 0) return initRealisticStore();
+
   const today = todayString();
   const tomorrow = tomorrowString();
   const yesterday = offsetDateString(-1);
@@ -516,10 +691,20 @@ export function demoCreateWalkInReservation(hotelId: string, session: HostedSess
   const room = roomsFor(hotelId).find((candidate) => candidate.id === input.roomId);
   if (!room) throw notFound("Room was not found for this demo hotel.");
   if (["occupied", "maintenance"].includes(room.status)) throw badRequest("Room is not available for a walk-in.");
-  const guestId = input.guestId?.trim() || createId("guest");
+  const suppliedGuestId = input.guestId?.trim();
+  const guestId = suppliedGuestId || createId("guest");
   const reservationId = createId("res");
-  const guest = { id: guestId, fullName: input.fullName, email: input.email, phone: input.phone, notes: input.guestNotes, createdAt: todayString() };
-  demoStore().guests[hotelId].push(guest);
+  if (suppliedGuestId) {
+    const existing = guestsFor(hotelId).find((candidate) => candidate.id === suppliedGuestId);
+    if (!existing) throw notFound("Guest was not found for this demo hotel.");
+    existing.fullName = input.fullName;
+    existing.email = input.email;
+    existing.phone = input.phone;
+    existing.notes = input.guestNotes;
+  } else {
+    const guest = { id: guestId, fullName: input.fullName, email: input.email, phone: input.phone, notes: input.guestNotes, createdAt: todayString() };
+    demoStore().guests[hotelId].push(guest);
+  }
   const nights = Math.max(1, Math.round((Date.parse(input.checkOut) - Date.parse(input.checkIn)) / 86400000) || 1);
   reservationsFor(hotelId).push({
     id: reservationId,
@@ -547,6 +732,10 @@ export function demoCreateWalkInReservation(hotelId: string, session: HostedSess
 export function demoUpdateReservationStatus(hotelId: string, session: HostedSession, reservationId: string, status: ReservationStatus) {
   const reservation = reservationsFor(hotelId).find((candidate) => candidate.id === reservationId);
   if (!reservation) throw notFound("Reservation was not found for this demo hotel.");
+  if (!isReservationTransitionAllowed(reservation.status, status)) {
+    throw badRequest(`Cannot change reservation from "${reservation.status}" to "${status}".`);
+  }
+  if (reservation.status === status) return;
   reservation.status = status;
   const room = roomsFor(hotelId).find((candidate) => candidate.id === reservation.roomId);
   if (room && status === "checked-in") room.status = "occupied";
@@ -587,6 +776,9 @@ function taskForRoom(hotelId: string, roomId: string, session?: HostedSession) {
 
 export function demoStartHousekeepingRoom(hotelId: string, session: HostedSession, roomId: string) {
   const task = taskForRoom(hotelId, roomId, session);
+  if (!isHousekeepingActionAllowed(task.status, "start")) {
+    throw badRequest(`Cannot start housekeeping when task is "${task.status}".`);
+  }
   task.status = "cleaning";
   task.updatedAt = new Date().toISOString();
   const room = roomsFor(hotelId).find((candidate) => candidate.id === roomId);
@@ -596,6 +788,9 @@ export function demoStartHousekeepingRoom(hotelId: string, session: HostedSessio
 
 export function demoFinishHousekeepingRoom(hotelId: string, session: HostedSession, roomId: string) {
   const task = taskForRoom(hotelId, roomId, session);
+  if (!isHousekeepingActionAllowed(task.status, "finish")) {
+    throw badRequest(`Cannot finish housekeeping when task is "${task.status}".`);
+  }
   task.status = "inspection";
   task.updatedAt = new Date().toISOString();
   audit(hotelId, session, "housekeeping.finish", "housekeeping_task", task.id);
@@ -603,6 +798,9 @@ export function demoFinishHousekeepingRoom(hotelId: string, session: HostedSessi
 
 export function demoApproveHousekeepingRoom(hotelId: string, session: HostedSession, roomId: string) {
   const task = taskForRoom(hotelId, roomId);
+  if (!isHousekeepingActionAllowed(task.status, "approve")) {
+    throw badRequest(`Cannot approve housekeeping when task is "${task.status}".`);
+  }
   task.status = "ready";
   task.notes = "";
   task.updatedAt = new Date().toISOString();
@@ -613,11 +811,14 @@ export function demoApproveHousekeepingRoom(hotelId: string, session: HostedSess
 
 export function demoSendBackHousekeepingRoom(hotelId: string, session: HostedSession, roomId: string, reason: string) {
   const task = taskForRoom(hotelId, roomId);
-  task.status = "cleaning";
+  if (!isHousekeepingActionAllowed(task.status, "send-back")) {
+    throw badRequest(`Cannot send back housekeeping when task is "${task.status}".`);
+  }
+  task.status = "dirty";
   task.notes = reason;
   task.updatedAt = new Date().toISOString();
   const room = roomsFor(hotelId).find((candidate) => candidate.id === roomId);
-  if (room) room.status = "cleaning";
+  if (room) room.status = "dirty";
   audit(hotelId, session, "housekeeping.send-back", "housekeeping_task", task.id);
 }
 
@@ -627,6 +828,9 @@ export function demoCreateMaintenanceTicket(hotelId: string, session: HostedSess
   const id = input.id?.trim() || createId("mt");
   const existing = maintenanceFor(hotelId).find((ticket) => ticket.id === id);
   if (existing) return demoUpdateMaintenanceTicket(hotelId, session, id, input);
+  if (!isMaintenanceCreateStatusAllowed(input.status)) {
+    throw badRequest("New maintenance tickets can only be created with status open, in-progress, or blocked.");
+  }
   maintenanceFor(hotelId).push({ id, roomId: room.id, roomNumber: room.number, title: input.title, priority: input.priority, status: input.status, dueDate: input.dueDate });
   if (!isInactiveMaintenanceStatus(input.status)) {
     markDemoRoomInMaintenance(hotelId, session, room.id);
@@ -640,6 +844,15 @@ export function demoUpdateMaintenanceTicket(hotelId: string, session: HostedSess
   if (!ticket) throw notFound("Maintenance ticket was not found for this demo hotel.");
   const room = roomsFor(hotelId).find((candidate) => candidate.id === input.roomId);
   if (!room) throw notFound("Room was not found for this demo hotel.");
+  if (ticket.status === "pending-review") {
+    throw badRequest("Pending issue reports must be approved or cancelled through the issue review workflow.");
+  }
+  if (!isMaintenanceTransitionAllowed(ticket.status, input.status)) {
+    throw badRequest(`Cannot change maintenance status from "${ticket.status}" to "${input.status}".`);
+  }
+  if ((ticket.status === "resolved" || ticket.status === "cancelled") && input.status === ticket.status && ticket.roomId !== input.roomId) {
+    throw badRequest("Closed maintenance tickets cannot be moved to another room.");
+  }
 
   const previousRoomId = ticket.roomId;
   const previousStatus = ticket.status;
@@ -691,19 +904,25 @@ export function demoSearchFrontDesk(hotelId: string, query: string, limit = 25):
 }
 
 export function demoSaveGuest(hotelId: string, session: HostedSession, input: GuestInput) {
-  const id = input.id?.trim() || createId("guest");
+  const id = input.id?.trim();
   const guests = guestsFor(hotelId);
-  const existing = guests.find((guest) => guest.id === id);
-  if (existing) {
+  if (id) {
+    const existing = guests.find((guest) => guest.id === id);
+    if (!existing) {
+      throw notFound("Guest was not found for this demo hotel.");
+    }
     existing.fullName = input.fullName;
     existing.email = input.email;
     existing.phone = input.phone;
     existing.notes = input.notes;
-  } else {
-    guests.push({ id, fullName: input.fullName, email: input.email, phone: input.phone, notes: input.notes, createdAt: todayString() });
+    audit(hotelId, session, "guest.update", "guest", id);
+    return existing;
   }
-  audit(hotelId, session, existing ? "guest.update" : "guest.create", "guest", id);
-  const saved = guests.find((guest) => guest.id === id);
+  const newId = createId("guest");
+  const guest = { id: newId, fullName: input.fullName, email: input.email, phone: input.phone, notes: input.notes, createdAt: todayString() };
+  guests.push(guest);
+  audit(hotelId, session, "guest.create", "guest", newId);
+  const saved = guests.find((guest) => guest.id === newId);
   if (!saved) throw notFound("Guest was not found after saving.");
   return saved;
 }
