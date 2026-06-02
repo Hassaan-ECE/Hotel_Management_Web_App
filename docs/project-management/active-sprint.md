@@ -540,6 +540,20 @@ Acceptance criteria:
 - Done: Update PM docs and manual smoke checklist.
 - Done: Run focused tests, typecheck, lint, full tests, build, diff, and whitespace checks.
 
+### Packet 28 - Booking Board Scale Correction And Walk-In Cleanup
+
+Status: completed on 2026-06-02.
+
+Owner: manager implements and verifies.
+
+Acceptance criteria:
+
+- Done: Tighten date-range controls so date inputs do not waste horizontal space or overlap the Apply button.
+- Done: Rebuild the booking board as a shared room-label column plus shared timeline region instead of independently compressed row grids.
+- Done: Keep reservation spans calculated from one date scale for the selected range.
+- Done: Remove the `Available rooms` side panel from the walk-in page while keeping the room selector in the form.
+- Done: Keep the table/board toggle for now while evaluating whether the board can become the primary reservations view.
+
 ## Manager Review Focus
 
 - Do not broaden scope into room-state schema work during release-foundation cleanup.

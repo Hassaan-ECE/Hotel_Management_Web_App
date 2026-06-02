@@ -194,11 +194,12 @@ describe("packet 17 front-desk components", () => {
   });
 
   test("walk-in page form captures guest details without a separate guest record panel", () => {
-    const html = renderToStaticMarkup(<frontDeskComponents.FrontDeskWalkInPage hotelId="hotel-1" hotelName="Packet Hotel" today="2026-06-01" rooms={rooms} />);
+    const html = renderToStaticMarkup(<frontDeskComponents.FrontDeskWalkInPage hotelId="hotel-1" today="2026-06-01" rooms={rooms} />);
 
     expect(html.includes("Walk-in reservation")).toBe(true);
     expect(html.includes("Guest notes")).toBe(true);
     expect(html.includes("Reservation notes")).toBe(true);
+    expect(html.includes("Available rooms")).toBe(false);
     expect(html.includes("Guest record")).toBe(false);
   });
 
@@ -234,6 +235,7 @@ describe("packet 17 front-desk components", () => {
     );
 
     expect(html.includes("Room 103")).toBe(false);
+    expect(html.includes("booking-timeline")).toBe(true);
     expect(html.includes("/hotels/hotel-1/front-desk/reservations/res-1")).toBe(true);
   });
 
@@ -241,6 +243,11 @@ describe("packet 17 front-desk components", () => {
     expect(frontDeskComponents.bookingDateLabelStep(8)).toBe(1);
     expect(frontDeskComponents.bookingDateLabelStep(14)).toBe(2);
     expect(frontDeskComponents.bookingDateLabelStep(30)).toBe(4);
+  });
+
+  test("booking board spans reservations on one shared date scale", () => {
+    expect(frontDeskComponents.bookingBoardSpan("2026-06-01", 14, reservationsPayload.reservations[1])).toEqual({ start: 0, span: 2 });
+    expect(frontDeskComponents.bookingBoardSpan("2026-06-01", 14, reservationsPayload.reservations[0])).toEqual({ start: 1, span: 2 });
   });
 
   test("availability summary answers sellable room type questions", () => {

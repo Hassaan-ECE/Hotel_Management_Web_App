@@ -1217,3 +1217,67 @@ Notes:
 
 - Reservation detail loading is hotel-scoped in both production and demo paths.
 - Checkout confirmation is client-side UX only; the existing server transition guard remains the source of truth.
+
+## 2026-06-02 Packet 28 Booking Board Scale Correction And Walk-In Cleanup
+
+Context:
+
+- User reported the compressed booking board still looked incorrect because rows were effectively acting like individually compressed grids.
+- User also reported date-range controls still overlapped/wasted space and requested removal of the walk-in page `Available rooms` side panel.
+- Rebuilt the booking board into a shared room-label column plus shared timeline region, with reservation spans calculated against the selected range date scale.
+
+Checks run:
+
+```powershell
+bun test --isolate test\front-desk-workflow-packet17.test.tsx
+```
+
+Result: passed. 15 tests passed with 52 assertions.
+
+```powershell
+bun run test
+```
+
+Result: passed. 112 tests passed across 14 files with 357 assertions.
+
+```powershell
+bun run typecheck
+```
+
+Result: passed.
+
+```powershell
+bun run lint
+```
+
+Result: passed.
+
+```powershell
+bun run build
+```
+
+Result: passed.
+
+```powershell
+git diff --check
+```
+
+Result: passed, with existing CRLF normalization warnings only.
+
+```powershell
+rg -n "[ \t]+$" docs\project-management src test
+```
+
+Result: passed with no matches.
+
+Additional local smoke:
+
+```powershell
+temporary demo-mode dev-server HTTP smoke
+```
+
+Result: passed. Authenticated demo session loaded the walk-in page without the `Available rooms` side panel and loaded the reservations page/date controls.
+
+Notes:
+
+- The table/booking-board toggle remains in place for now while the booking board is evaluated as a possible primary reservations view.

@@ -638,7 +638,7 @@ svg {
   display: flex;
   align-items: end;
   justify-content: space-between;
-  gap: 18px;
+  gap: 14px;
 }
 
 .view-toggle,
@@ -651,12 +651,27 @@ svg {
 }
 
 .date-range-form {
-  gap: 14px;
+  display: grid;
+  grid-template-columns: max-content max-content max-content;
+  gap: 12px;
+  flex: 0 0 auto;
 }
 
 .date-inline-label {
-  grid-template-columns: auto minmax(138px, 1fr);
+  grid-template-columns: auto 134px;
   align-items: center;
+  gap: 7px;
+}
+
+.date-range-form input {
+  width: 134px;
+  min-height: 38px;
+  padding-inline: 9px 6px;
+}
+
+.date-range-form .secondary-button {
+  min-height: 38px;
+  padding-inline: 12px;
 }
 
 .reservation-controls {
@@ -675,9 +690,9 @@ svg {
   background: var(--panel);
 }
 
-.booking-board-header,
-.booking-board-row {
+.booking-board-line {
   display: grid;
+  grid-template-columns: minmax(82px, 104px) minmax(0, 1fr);
   width: 100%;
 }
 
@@ -689,18 +704,33 @@ svg {
 }
 
 .booking-board-row {
-  position: relative;
   min-height: 54px;
   border-top: 1px solid var(--border);
 }
 
+.booking-timeline {
+  display: grid;
+  grid-template-columns: repeat(var(--booking-day-count), minmax(0, 1fr));
+  min-width: 0;
+}
+
+.booking-row-timeline {
+  position: relative;
+}
+
 .booking-room-header,
-.booking-date-header,
-.booking-room-cell,
-.booking-date-cell {
+.booking-room-cell {
   min-height: 42px;
   border-right: 1px solid var(--border);
   padding: 8px;
+}
+
+.booking-date-header,
+.booking-date-cell {
+  min-width: 0;
+  min-height: 42px;
+  border-right: 1px solid var(--border);
+  padding: 8px 4px;
 }
 
 .booking-room-header,
@@ -711,7 +741,6 @@ svg {
 }
 
 .booking-room-cell {
-  grid-row: 1;
   display: grid;
   align-content: center;
   gap: 2px;
@@ -738,7 +767,7 @@ svg {
   display: grid;
   gap: 2px;
   min-height: 34px;
-  margin: 8px 3px;
+  margin: 8px 4px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--panel-soft);
@@ -1705,6 +1734,10 @@ button.primary:hover,
     width: 100%;
   }
 
+  .date-range-form {
+    grid-template-columns: 1fr;
+  }
+
   .front-desk-toolbar .primary-button,
   .front-desk-toolbar .secondary-button,
   .date-range-form .secondary-button,
@@ -1714,6 +1747,10 @@ button.primary:hover,
 
   .date-inline-label {
     grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  .date-range-form input {
+    width: 100%;
   }
 
   .front-desk-action-card {

@@ -75,12 +75,10 @@ export function FrontDeskHub({
 
 export function FrontDeskWalkInPage({
   hotelId,
-  hotelName,
   today,
   rooms,
 }: {
   hotelId: string;
-  hotelName: string;
   today: string;
   rooms: Room[];
 }) {
@@ -124,24 +122,16 @@ export function FrontDeskWalkInPage({
   }
 
   return (
-    <div className="workspace-grid">
-      <section className="stack single-column">
-        {message ? <p className="error-text">{message}</p> : null}
-        <Panel title="Walk-in reservation">
-          {availableRooms.length === 0 ? (
-            <EmptyState message="No rooms are available for walk-ins." />
-          ) : (
-            <WalkInForm rooms={availableRooms} today={today} pending={pending} onSubmit={createWalkIn} />
-          )}
-        </Panel>
-      </section>
-      <aside className="stack">
-        <Panel title="Available rooms">
-          <p className="muted">{hotelName}</p>
-          <RoomList rows={availableRooms} compact />
-        </Panel>
-      </aside>
-    </div>
+    <section className="stack single-column">
+      {message ? <p className="error-text">{message}</p> : null}
+      <Panel title="Walk-in reservation">
+        {availableRooms.length === 0 ? (
+          <EmptyState message="No rooms are available for walk-ins." />
+        ) : (
+          <WalkInForm rooms={availableRooms} today={today} pending={pending} onSubmit={createWalkIn} />
+        )}
+      </Panel>
+    </section>
   );
 }
 
@@ -592,48 +582,51 @@ export function BookingBoard({
   const visibleRooms = roomsForBookingBoard(rooms, reservations, showAllRooms);
   if (visibleRooms.length === 0) return <EmptyState message="No booked rooms in this range." />;
 
-  const gridTemplateColumns = `minmax(82px, 104px) repeat(${dates.length}, minmax(0, 1fr))`;
+  const timelineStyle = bookingTimelineStyle(dates.length);
   const labelStep = bookingDateLabelStep(dates.length);
 
   return (
     <div className="booking-board" aria-label={`${hotelName} booking board`}>
-      <div className="booking-board-header" style={{ gridTemplateColumns }}>
+      <div className="booking-board-line booking-board-header">
         <div className="booking-room-header">Room</div>
-        {dates.map((date, index) => (
-          <div className="booking-date-header" key={date} title={date}>
-            {index % labelStep === 0 || index === dates.length - 1 ? date.slice(5) : ""}
-          </div>
-        ))}
+        <div className="booking-timeline booking-timeline-header" style={timelineStyle}>
+          {dates.map((date, index) => (
+            <div className="booking-date-header" key={date} title={date}>
+              {index % labelStep === 0 || index === dates.length - 1 ? date.slice(5) : ""}
+            </div>
+          ))}
+        </div>
       </div>
       {visibleRooms.map((room) => {
         const roomReservations = reservations.filter((reservation) => reservation.roomId === room.id);
         return (
-          <div className="booking-board-row" style={{ gridTemplateColumns }} key={room.id}>
+          <div className="booking-board-line booking-board-row" key={room.id}>
             <div className="booking-room-cell">
               <strong>{room.number}</strong>
               <span>{room.roomType}</span>
             </div>
-            {dates.map((date) => (
-              <div className="booking-date-cell" key={`${room.id}-${date}`} />
-            ))}
-            {roomReservations.map((reservation) => {
-              const startIndex = Math.max(0, daysBetween(rangeStart, reservation.checkIn));
-              const endIndex = Math.min(dates.length, daysBetween(rangeStart, reservation.checkOut));
-              if (endIndex <= startIndex) return null;
-              return (
-                <Link
-                  className={`booking-bar status-${reservation.status}`}
-                  href={reservationHref(hotelId, reservation.id)}
-                  key={reservation.id}
-                  style={{ gridColumn: `${startIndex + 2} / ${endIndex + 2}`, gridRow: 1 }}
-                  title={`${reservation.guestName}, room ${reservation.roomNumber}, ${reservation.checkIn} to ${reservation.checkOut}`}
-                  aria-label={`Open reservation for ${reservation.guestName} in room ${reservation.roomNumber}`}
-                >
-                  <strong>{reservation.guestName}</strong>
-                  <span>{reservation.checkIn} - {reservation.checkOut}</span>
-                </Link>
-              );
-            })}
+            <div className="booking-timeline booking-row-timeline" style={timelineStyle}>
+              {dates.map((date) => (
+                <div className="booking-date-cell" key={`${room.id}-${date}`} />
+              ))}
+              {roomReservations.map((reservation) => {
+                const span = bookingBoardSpan(rangeStart, dates.length, reservation);
+                if (!span) return null;
+                return (
+                  <Link
+                    className={`booking-bar status-${reservation.status}`}
+                    href={reservationHref(hotelId, reservation.id)}
+                    key={reservation.id}
+                    style={{ gridColumn: `${span.start + 1} / span ${span.span}`, gridRow: 1 }}
+                    title={`${reservation.guestName}, room ${reservation.roomNumber}, ${reservation.checkIn} to ${reservation.checkOut}`}
+                    aria-label={`Open reservation for ${reservation.guestName} in room ${reservation.roomNumber}`}
+                  >
+                    <strong>{reservation.guestName}</strong>
+                    <span>{reservation.checkIn} - {reservation.checkOut}</span>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         );
       })}
@@ -894,24 +887,6 @@ function EmptyState({ message }: { message: string }) {
   return <p className="empty-state">{message}</p>;
 }
 
-function RoomList({ rows, compact = false }: { rows: Room[]; compact?: boolean }) {
-  if (rows.length === 0) return <EmptyState message="No rooms to show." />;
-
-  return (
-    <div className={compact ? "compact-list" : "grid hotel-grid"}>
-      {rows.map((room) => (
-        <article className={compact ? undefined : "card"} key={room.id}>
-          <div>
-            <strong>Room {room.number}</strong>
-            <p className="muted">{room.roomType}</p>
-          </div>
-          <StatusPill value={room.status} />
-        </article>
-      ))}
-    </div>
-  );
-}
-
 function reservationHref(hotelId: string, reservationId: string) {
   return `/hotels/${hotelId}/front-desk/reservations/${reservationId}`;
 }
@@ -932,6 +907,17 @@ export function bookingDateLabelStep(dayCount: number) {
   if (dayCount <= 21) return 2;
   if (dayCount <= 45) return 4;
   return 7;
+}
+
+export function bookingBoardSpan(rangeStart: string, dayCount: number, reservation: ReservationSummary) {
+  const start = Math.max(0, daysBetween(rangeStart, reservation.checkIn));
+  const end = Math.min(dayCount, daysBetween(rangeStart, reservation.checkOut));
+  if (end <= start) return null;
+  return { start, span: end - start };
+}
+
+function bookingTimelineStyle(dayCount: number) {
+  return { "--booking-day-count": String(dayCount) } as React.CSSProperties;
 }
 
 export function summarizeRoomTypeAvailability(payload: FrontDeskReservationsPayload): RoomTypeAvailability[] {

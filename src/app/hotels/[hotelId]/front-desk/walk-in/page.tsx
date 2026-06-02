@@ -46,7 +46,7 @@ export default async function WalkInPage({ params }: { params: Promise<{ hotelId
             </Link>
           </div>
         </div>
-        <FrontDeskWalkInPage hotelId={hotel.id} hotelName={hotel.name} today={today.today} rooms={today.rooms} />
+        <FrontDeskWalkInPage hotelId={hotel.id} today={today.today} rooms={today.rooms} />
       </main>
     </div>
   );
