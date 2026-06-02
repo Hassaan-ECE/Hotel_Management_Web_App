@@ -1347,3 +1347,66 @@ Notes:
 
 - Table/booking-board toggle remains in place while testing continues.
 - Clipped range-edge behavior is tested with synthetic reservations that start before and end after the selected date range.
+
+## 2026-06-02 Packet 30 Walk-In Date Overflow And Booking Edge Clarity
+
+Context:
+
+- User reported that the walk-in page still had overflowing date fields and that booking-board bars should not repeat raw date ranges inside each entry.
+- Replaced the walk-in Stay section's wide single grid with nested room, date, and guest-count groups.
+- Forced walk-in date controls to stack on phone widths before browser-native date inputs can overflow.
+- Removed visible raw check-in/check-out ranges from booking-board bars.
+- Added a booking-board legend and explicit edge markers for stays that start before or continue after the selected date range.
+
+Checks run:
+
+```powershell
+bun test --isolate test\front-desk-workflow-packet17.test.tsx
+```
+
+Result: passed. 16 tests passed with 65 assertions.
+
+```powershell
+bun run test
+```
+
+Result: passed. 113 tests passed across 14 files with 370 assertions.
+
+```powershell
+bun run typecheck
+```
+
+Result: passed.
+
+```powershell
+bun run lint
+```
+
+Result: passed.
+
+```powershell
+bun run build
+```
+
+Result: passed.
+
+```powershell
+git diff --check
+```
+
+Result: passed, with existing CRLF normalization warnings only.
+
+```powershell
+rg -n "[ \t]+$" docs\project-management src test
+```
+
+Result: passed with no matches.
+
+Additional smoke:
+
+- Local browser smoke was attempted but not counted as passed because the in-app browser runtime failed during Windows sandbox setup before opening the local app.
+
+Notes:
+
+- Booking bars still link to hotel-scoped reservation detail pages.
+- The table/booking-board toggle remains in place while front-desk testing continues.

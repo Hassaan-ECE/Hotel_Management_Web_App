@@ -197,6 +197,8 @@ describe("packet 17 front-desk components", () => {
     const html = renderToStaticMarkup(<frontDeskComponents.FrontDeskWalkInPage hotelId="hotel-1" today="2026-06-01" rooms={rooms} />);
 
     expect(html.includes("Walk-in reservation")).toBe(true);
+    expect(html.includes("walk-in-stay-layout")).toBe(true);
+    expect(html.includes("walk-in-date-pair")).toBe(true);
     expect(html.includes("Guest notes")).toBe(true);
     expect(html.includes("Reservation notes")).toBe(true);
     expect(html.includes("Available rooms")).toBe(false);
@@ -235,8 +237,10 @@ describe("packet 17 front-desk components", () => {
     );
 
     expect(html.includes("Room 103")).toBe(false);
+    expect(html.includes("Inside selected range")).toBe(true);
     expect(html.includes("booking-timeline")).toBe(true);
     expect(html.includes("--booking-bar-left")).toBe(true);
+    expect(html.includes("2026-06-02 - 2026-06-04")).toBe(false);
     expect(html.includes("/hotels/hotel-1/front-desk/reservations/res-1")).toBe(true);
   });
 
@@ -295,6 +299,10 @@ describe("packet 17 front-desk components", () => {
 
     expect(html.includes("clipped-start")).toBe(true);
     expect(html.includes("clipped-end")).toBe(true);
+    expect(html.includes("booking-edge-tag start")).toBe(true);
+    expect(html.includes("booking-edge-tag end")).toBe(true);
+    expect(html.includes("started before selected range")).toBe(true);
+    expect(html.includes("continues after selected range")).toBe(true);
   });
 
   test("availability summary answers sellable room type questions", () => {

@@ -568,6 +568,20 @@ Acceptance criteria:
 - Done: Rework the walk-in form into Guest, Stay, and Rate/notes sections.
 - Done: Keep check-in/check-out fields responsive so they do not overlap on the walk-in page.
 
+### Packet 30 - Walk-In Date Overflow And Booking Edge Clarity
+
+Status: completed on 2026-06-02.
+
+Owner: manager implements and verifies.
+
+Acceptance criteria:
+
+- Done: Replace the walk-in Stay section's wide single grid with nested room, date, and guest-count groups.
+- Done: Force walk-in date fields to stack on phone widths so browser date inputs cannot overflow.
+- Done: Remove visible raw date ranges from booking-board bars.
+- Done: Add booking-board legend and edge markers for reservations that start before or continue after the selected date range.
+- Done: Keep booking bars linked to reservation detail pages and preserve hotel-scoped data loading.
+
 ## Manager Review Focus
 
 - Do not broaden scope into room-state schema work during release-foundation cleanup.

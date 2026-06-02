@@ -391,7 +391,7 @@ function WalkInForm({
       </fieldset>
       <fieldset className="walk-in-section">
         <legend>Stay</legend>
-        <div className="walk-in-field-grid walk-in-stay-grid">
+        <div className="walk-in-stay-layout">
           <label className="walk-in-room-field">
             Room
             <select name="roomId" required>
@@ -402,22 +402,26 @@ function WalkInForm({
               ))}
             </select>
           </label>
-          <label>
-            Check in
-            <input name="checkIn" type="date" defaultValue={today} required />
-          </label>
-          <label>
-            Check out
-            <input name="checkOut" type="date" defaultValue={today} required />
-          </label>
-          <label>
-            Adults
-            <input name="adults" type="number" min="1" defaultValue="1" />
-          </label>
-          <label>
-            Children
-            <input name="children" type="number" min="0" defaultValue="0" />
-          </label>
+          <div className="walk-in-date-pair">
+            <label className="walk-in-date-field">
+              Check in
+              <input name="checkIn" type="date" defaultValue={today} required />
+            </label>
+            <label className="walk-in-date-field">
+              Check out
+              <input name="checkOut" type="date" defaultValue={today} required />
+            </label>
+          </div>
+          <div className="walk-in-count-pair">
+            <label>
+              Adults
+              <input name="adults" type="number" min="1" defaultValue="1" />
+            </label>
+            <label>
+              Children
+              <input name="children" type="number" min="0" defaultValue="0" />
+            </label>
+          </div>
         </div>
       </fieldset>
       <fieldset className="walk-in-section">
@@ -601,7 +605,12 @@ export function BookingBoard({
   const labelStep = bookingDateLabelStep(dates.length);
 
   return (
-    <div className="booking-board" aria-label={`${hotelName} booking board`}>
+    <>
+      <div className="booking-board-legend" aria-label="Booking board legend">
+        <span><span className="booking-legend-swatch" aria-hidden="true" /> Inside selected range</span>
+        <span><span className="booking-legend-swatch clipped" aria-hidden="true" /> Continues outside range</span>
+      </div>
+      <div className="booking-board" aria-label={`${hotelName} booking board`}>
       <div className="booking-board-line booking-board-header">
         <div className="booking-room-header">Room</div>
         <div className="booking-timeline booking-timeline-header" style={timelineStyle}>
@@ -629,15 +638,17 @@ export function BookingBoard({
                 if (!span) return null;
                 return (
                   <Link
-                    className={`booking-bar status-${reservation.status}${span.clippedStart ? " clipped-start" : ""}${span.clippedEnd ? " clipped-end" : ""}`}
+                    className={`booking-bar status-${reservation.status}${span.clippedStart || span.clippedEnd ? " clipped" : ""}${span.clippedStart ? " clipped-start" : ""}${span.clippedEnd ? " clipped-end" : ""}`}
                     href={reservationHref(hotelId, reservation.id)}
                     key={reservation.id}
                     style={bookingBarStyle(dates.length, span)}
-                    title={`${reservation.guestName}, room ${reservation.roomNumber}, ${reservation.checkIn} to ${reservation.checkOut}`}
-                    aria-label={`Open reservation for ${reservation.guestName} in room ${reservation.roomNumber}`}
+                    title={`${reservation.guestName}, room ${reservation.roomNumber}, ${bookingBarMeta(reservation, span)}`}
+                    aria-label={`Open reservation for ${reservation.guestName} in room ${reservation.roomNumber}. ${bookingBarMeta(reservation, span)}`}
                   >
+                    {span.clippedStart ? <span className="booking-edge-tag start" aria-hidden="true">{"<"}</span> : null}
                     <strong>{reservation.guestName}</strong>
-                    <span>{reservation.checkIn} - {reservation.checkOut}</span>
+                    <span className="booking-bar-meta">{bookingBarMeta(reservation, span)}</span>
+                    {span.clippedEnd ? <span className="booking-edge-tag end" aria-hidden="true">{">"}</span> : null}
                   </Link>
                 );
               })}
@@ -645,7 +656,8 @@ export function BookingBoard({
           </div>
         );
       })}
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -931,6 +943,25 @@ export function bookingBoardSpan(rangeStart: string, dayCount: number, reservati
   const end = Math.min(dayCount, rawEnd);
   if (end <= start) return null;
   return { start, end, span: end - start, clippedStart: rawStart < 0, clippedEnd: rawEnd > dayCount };
+}
+
+function bookingBarMeta(reservation: ReservationSummary, span: NonNullable<ReturnType<typeof bookingBoardSpan>>) {
+  const status = reservationStatusLabel(reservation.status);
+  if (span.clippedStart && span.clippedEnd) return `${status} - continues before and after selected range`;
+  if (span.clippedStart) return `${status} - started before selected range`;
+  if (span.clippedEnd) return `${status} - continues after selected range`;
+  return status;
+}
+
+function reservationStatusLabel(status: ReservationStatus) {
+  const labels: Record<ReservationStatus, string> = {
+    pending: "Pending",
+    confirmed: "Confirmed",
+    "checked-in": "Checked in",
+    "checked-out": "Checked out",
+    cancelled: "Cancelled",
+  };
+  return labels[status];
 }
 
 function bookingTimelineStyle(dayCount: number) {

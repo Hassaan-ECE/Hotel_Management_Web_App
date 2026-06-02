@@ -78,11 +78,11 @@ Before a hosted pilot, also smoke these role flows in demo mode or staging:
 - Front desk hub opens at `/hotels/<hotelId>/front-desk`, instant search updates while typing, and results are hotel-scoped.
 - Front desk walk-in opens at `/hotels/<hotelId>/front-desk/walk-in`, creates a checked-in reservation, and redirects to reservations.
 - Front desk reservations opens at `/hotels/<hotelId>/front-desk/reservations`; table search/filter/sort work, and check-in/check-out actions use the guarded status route.
-- Front desk booking board toggles from the reservations page, date range changes update the URL, empty room rows are hidden by default, longer ranges use one shared compressed timeline without horizontal dragging, reservation bars align to room/date spans, and bars clipped by the selected date range touch the range edge.
+- Front desk booking board toggles from the reservations page, date range changes update the URL, empty room rows are hidden by default, longer ranges use one shared compressed timeline without horizontal dragging, reservation bars align to room/date spans, bars do not show duplicate date ranges, and bars clipped by the selected date range show obvious edge markers.
 - Front desk reservation table entries and booking-board bars open `/hotels/<hotelId>/front-desk/reservations/<reservationId>`.
 - Front desk check-out action opens a confirmation dialog before moving the room to dirty and creating housekeeping turnover work.
 - Front desk hub room readiness appears under the main workflow and summarizes ready-to-sell rooms, housekeeping needs, blocked rooms, departures, and room-type availability.
-- Front desk walk-in page does not show the extra `Available rooms` side panel; guest, stay, and rate/notes fields are grouped clearly and check-in/check-out fields do not overlap.
+- Front desk walk-in page does not show the extra `Available rooms` side panel; guest, stay, and rate/notes fields are grouped clearly and check-in/check-out fields do not overlap or overflow on iPhone widths.
 - Housekeeping assignment, start, finish, approval, and send-back work.
 - Maintenance ticket create, update, resolve, and cancel work.
 - CSV export and JSON backup routes return data for the active hotel only.

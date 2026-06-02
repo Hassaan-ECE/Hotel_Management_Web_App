@@ -129,10 +129,11 @@ Acceptance criteria:
 - Done: Booking board hides empty rooms by default and compresses longer ranges instead of requiring drag/scroll.
 - Done: Booking board uses a shared timeline scale so reservation bars align proportionally across room rows.
 - Done: Booking board positions bars absolutely over the shared timeline and marks bars clipped by the selected range.
+- Done: Booking board bars no longer display raw date ranges and clipped stays now show an explicit legend plus edge markers.
 - Done: Reservation table entries and booking-board bars open a hotel-scoped reservation detail page.
 - Done: Check-out actions require confirmation before mutating reservation/room/housekeeping state.
 - Done: Front-desk hub room readiness moved below the main workflow and now summarizes ready-to-sell rooms, housekeeping needs, blocked rooms, departures, and room-type availability.
-- Done: Walk-in page no longer includes the extra `Available rooms` side panel and now groups guest, stay, and rate/notes fields.
+- Done: Walk-in page no longer includes the extra `Available rooms` side panel and now groups guest, stay, and rate/notes fields with date inputs that stack before they can overflow.
 
 ## P2
 
