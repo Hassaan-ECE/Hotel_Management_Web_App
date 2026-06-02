@@ -4,7 +4,7 @@ Last updated: 2026-06-01
 
 ## Sprint Goal
 
-Stabilize the hosted app foundation before expanding product scope. Tenant isolation, input hardening, workflow guards, test foundation, hosted setup docs, clean-copy release-gate verification, deterministic font builds, pilot auth provisioning docs, hosted staging migration/seed validation, invite-only auth routing UX, hosted Clerk middleware/mobile sign-in hotfix, hosted hotel dashboard date/mobile-topbar fixes, and mobile dashboard density/export placement polish are now in place.
+Stabilize the hosted app foundation before expanding product scope. Tenant isolation, input hardening, workflow guards, test foundation, hosted setup docs, clean-copy release-gate verification, deterministic font builds, pilot auth provisioning docs, hosted staging migration/seed validation, invite-only auth routing UX, hosted Clerk middleware/mobile sign-in hotfix, hosted hotel dashboard date/mobile-topbar fixes, mobile dashboard density/export placement polish, and admin/export naming polish are now in place.
 
 ## Current Acceptance Criteria
 
@@ -21,6 +21,7 @@ Stabilize the hosted app foundation before expanding product scope. Tenant isola
 - Hotel workspace payload dates are normalized before React rendering so Neon `Date` objects cannot crash the dashboard.
 - Mobile topbar keeps brand, workspace navigation, and account controls on one compact row.
 - Metric cards are denser on phone widths, and manager export actions are moved out of the page title into a dedicated data exports panel.
+- The top-level `owner` permission is presented as Admin in the UI, and export downloads use hotel-specific filenames.
 
 ## Next Implementation Packets
 
@@ -316,6 +317,32 @@ Acceptance criteria:
 - Done: CSV and backup downloads are removed from the page title.
 - Done: Owner/manager downloads live in a dedicated `Data exports` panel.
 - Done: Add render coverage for export placement.
+- Done: Run test, typecheck, lint, build, and whitespace checks before deployment.
+
+### Packet 14 - Admin Label And Hotel-Specific Export Names
+
+Status: completed on 2026-06-01.
+
+Owner: manager implements and verifies.
+
+Likely files:
+
+- `src/lib/roles.ts`
+- `src/lib/downloads.ts`
+- `src/components/portfolio-dashboard.tsx`
+- `src/components/hotel-workspace.tsx`
+- `src/app/api/hotels/[hotelId]/exports/[report]/route.ts`
+- `src/app/api/hotels/[hotelId]/backup/route.ts`
+- `test/download-filenames-packet14.test.ts`
+- PM docs.
+
+Acceptance criteria:
+
+- Done: Present the top-level app role as Admin in user-facing UI while preserving internal `owner` authorization semantics.
+- Done: Do not rely on Clerk public metadata for hotel roles.
+- Done: Export button labels are clearer.
+- Done: Downloaded CSV/backup filenames include the hotel name.
+- Done: Add focused tests for sanitized hotel-specific filenames and response headers.
 - Done: Run test, typecheck, lint, build, and whitespace checks before deployment.
 
 ## Manager Review Focus

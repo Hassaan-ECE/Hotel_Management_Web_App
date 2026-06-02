@@ -26,7 +26,7 @@ export default async function SignInPage() {
         <section className="panel stack auth-panel">
           <p className="eyebrow">Staff invitation</p>
           <h1>Sign in</h1>
-          <p className="muted">Only invited owner and staff accounts can access hotel workspaces.</p>
+          <p className="muted">Only invited admin and staff accounts can access hotel workspaces.</p>
           <SignIn
             routing="path"
             path="/sign-in"

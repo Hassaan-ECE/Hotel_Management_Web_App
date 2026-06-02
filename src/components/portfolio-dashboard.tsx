@@ -9,7 +9,7 @@ export function PortfolioDashboard({ payload }: { payload: PortfolioDashboardPay
     <main className="container stack">
       <div className="page-title">
         <div>
-          <p className="eyebrow">Owner overview</p>
+          <p className="eyebrow">Admin overview</p>
           <h1>All hotels</h1>
           <p className="muted">Signed in as {payload.session.displayName}. Each hotel keeps isolated operations data.</p>
         </div>

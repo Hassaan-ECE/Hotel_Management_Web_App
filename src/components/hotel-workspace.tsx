@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState, useTransition } from "react";
 import { ArrowRight, BedDouble, CheckCircle2, ClipboardCheck, Download, LogOut, Play, Plus, Save, Search, Wrench, XCircle } from "lucide-react";
 import { Money, StatusPill } from "@/components/format";
+import { hotelBackupFilename, hotelExportFilename } from "@/lib/downloads";
 import { roleLabels } from "@/lib/roles";
 import type {
   AuditLogEntry,
@@ -291,6 +292,7 @@ export function HotelWorkspace({
       {isManagerView ? (
         <ManagerWorkspace
           hotelId={hotel.id}
+          hotelName={hotel.name}
           today={today}
           manager={manager}
           pendingIssueReports={pendingIssueReports}
@@ -330,6 +332,7 @@ export function HotelWorkspace({
 
 function ManagerWorkspace({
   hotelId,
+  hotelName,
   today,
   manager,
   pendingIssueReports,
@@ -337,6 +340,7 @@ function ManagerWorkspace({
   onReviewIssue,
 }: {
   hotelId: string;
+  hotelName: string;
   today: TodayDeskPayload;
   manager: ManagerDashboardPayload | null;
   pendingIssueReports: MaintenanceTicket[];
@@ -376,25 +380,25 @@ function ManagerWorkspace({
           <Panel title="Recent audit">
             <AuditList rows={manager.recentAudit} />
           </Panel>
-          <ExportPanel hotelId={hotelId} />
+          <ExportPanel hotelId={hotelId} hotelName={hotelName} />
         </aside>
       </div>
     </>
   );
 }
 
-function ExportPanel({ hotelId }: { hotelId: string }) {
+function ExportPanel({ hotelId, hotelName }: { hotelId: string; hotelName: string }) {
   return (
     <Panel title="Data exports">
       <div className="export-actions">
-        <a className="button" href={`/api/hotels/${hotelId}/exports/reservations`}>
-          <Download size={16} /> Reservations CSV
+        <a className="button" href={`/api/hotels/${hotelId}/exports/reservations`} download={hotelExportFilename(hotelName, "reservations")}>
+          <Download size={16} /> Reservation list
         </a>
-        <a className="button" href={`/api/hotels/${hotelId}/exports/rooms`}>
-          <Download size={16} /> Rooms CSV
+        <a className="button" href={`/api/hotels/${hotelId}/exports/rooms`} download={hotelExportFilename(hotelName, "rooms")}>
+          <Download size={16} /> Room inventory
         </a>
-        <a className="button" href={`/api/hotels/${hotelId}/backup`}>
-          <Download size={16} /> Backup JSON
+        <a className="button" href={`/api/hotels/${hotelId}/backup`} download={hotelBackupFilename(hotelName)}>
+          <Download size={16} /> Full hotel backup
         </a>
       </div>
     </Panel>

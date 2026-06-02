@@ -1,7 +1,7 @@
 import type { AppRole, StaffRole } from "@/lib/types";
 
 export const roleLabels: Record<AppRole, string> = {
-  owner: "Owner",
+  owner: "Admin",
   manager: "Manager",
   "front-desk": "Front desk",
   housekeeping: "Housekeeper",

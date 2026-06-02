@@ -922,3 +922,42 @@ Notes:
 - Mobile metric cards now use compact two-column tiles.
 - Owner/manager export links moved from the page title to a `Data exports` panel.
 - Added `test/hotel-workspace-packet13.test.tsx` to cover export placement.
+
+## 2026-06-01 Packet 14 Admin Label And Hotel-Specific Export Names
+
+Context:
+
+- Hosted smoke testing confirmed `Data exports` works, but downloaded files from different hotels used generic names.
+- User also requested Admin wording instead of Owner. PM decision: keep the internal `owner` role key for authorization and present it as Admin in user-facing UI to avoid unnecessary schema/security churn.
+- Clerk public metadata is not used for hotel roles; app permissions remain controlled by `hotel_memberships`.
+
+Checks run:
+
+```powershell
+bun run test
+```
+
+Result: passed. 77 tests passed across 10 files with 251 assertions.
+
+```powershell
+bun run typecheck
+```
+
+Result: passed.
+
+```powershell
+bun run lint
+```
+
+Result: passed.
+
+```powershell
+bun run build
+```
+
+Result: passed. Build output still included `Proxy (Middleware)`.
+
+Notes:
+
+- Export and backup response headers now use sanitized hotel-specific filenames.
+- Export panel labels now read `Reservation list`, `Room inventory`, and `Full hotel backup`.

@@ -83,8 +83,10 @@ describe("packet 13 hotel workspace layout", () => {
     const pageTitleHtml = html.slice(pageTitleStart, metricsStart);
 
     expect(html.includes("Data exports")).toBe(true);
-    expect(html.includes("Reservations CSV")).toBe(true);
-    expect(pageTitleHtml.includes("Reservations CSV")).toBe(false);
-    expect(pageTitleHtml.includes("Backup JSON")).toBe(false);
+    expect(html.includes("Reservation list")).toBe(true);
+    expect(html.includes("Room inventory")).toBe(true);
+    expect(html.includes("Full hotel backup")).toBe(true);
+    expect(pageTitleHtml.includes("Reservation list")).toBe(false);
+    expect(pageTitleHtml.includes("Full hotel backup")).toBe(false);
   });
 });
