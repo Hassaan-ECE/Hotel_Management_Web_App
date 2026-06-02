@@ -147,6 +147,14 @@ export interface SearchResults {
   rooms: Room[];
 }
 
+export interface FrontDeskReservationsPayload {
+  today: string;
+  rangeStart: string;
+  rangeEnd: string;
+  rooms: Room[];
+  reservations: ReservationSummary[];
+}
+
 export interface CountRow {
   label: string;
   count: number;

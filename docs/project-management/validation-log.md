@@ -1076,3 +1076,74 @@ Notes:
 
 - The hotel workspace no longer renders `Admin role preview` or `Profile role`, keeping the deployed page layout stable.
 - Hosted use path is now: open a hotel, click the user/account button, open `Manage account`, select `Role preview`, choose a role, and apply.
+
+## 2026-06-02 Packets 17-21 Front Desk Workflow Split
+
+Context:
+
+- User requested focused front-desk pages, instant ranked search, a separate walk-in page, a separate arrivals/in-house reservations page, and a table / booking-board toggle with custom date ranges.
+- Added `/hotels/[hotelId]/front-desk`, `/hotels/[hotelId]/front-desk/walk-in`, and `/hotels/[hotelId]/front-desk/reservations`.
+- Removed the standalone guest-record panel from front-desk UI while preserving automatic guest creation through the walk-in reservation service.
+- Added dependency-free ranked search and an active-reservation overlap loader for the booking board.
+
+Checks run:
+
+```powershell
+bun test --isolate test\front-desk-workflow-packet17.test.tsx test\validation-packet-2.test.ts test\hotel-workspace-packet13.test.tsx
+```
+
+Result: passed. 36 tests passed across 3 files with 74 assertions.
+
+```powershell
+bun run test
+```
+
+Result: passed. 105 tests passed across 14 files with 331 assertions.
+
+```powershell
+bun run typecheck
+```
+
+Result: passed.
+
+```powershell
+bun run lint
+```
+
+Result: passed after moving empty-search state clearing from an effect body into the input change handler.
+
+```powershell
+bun run build
+```
+
+Result: passed. Build output includes `/hotels/[hotelId]/front-desk`, `/hotels/[hotelId]/front-desk/walk-in`, `/hotels/[hotelId]/front-desk/reservations`, and `Proxy (Middleware)`.
+
+```powershell
+git diff --check
+```
+
+Result: passed, with existing CRLF normalization warnings only.
+
+```powershell
+rg -n "[ \t]+$" docs\project-management src test
+```
+
+Result: passed with no matches.
+
+Additional local smoke:
+
+```powershell
+temporary demo-mode dev-server HTTP smoke
+```
+
+Result: passed. Signed in as Demo Front Desk, loaded the front-desk hub, walk-in page, reservations table page, and custom booking-board date range. Created one walk-in reservation in the temporary demo server, then confirmed instant search returned the created reservation.
+
+Browser visual pass:
+
+- Attempted to start the in-app browser runtime for screenshots.
+- The local Node REPL browser kernel exited before navigation with a Windows sandbox setup failure, so no screenshot result is recorded for this pass.
+
+Notes:
+
+- Search remains hotel-scoped and keeps the existing API response shape.
+- Booking board ranges use an exclusive end date internally; the UI exposes start/end date inputs and updates the URL query.

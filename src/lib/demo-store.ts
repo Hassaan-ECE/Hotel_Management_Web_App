@@ -4,6 +4,7 @@ import type {
   AppRole,
   AuditLogEntry,
   BookingRequest,
+  FrontDeskReservationsPayload,
   Guest,
   GuestInput,
   HostedSession,
@@ -82,6 +83,39 @@ function offsetDateString(days: number) {
 
 function createId(prefix: string) {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+const activeReservationStatuses: ReservationStatus[] = ["pending", "confirmed", "checked-in"];
+
+function searchTokens(query: string) {
+  return query
+    .toLowerCase()
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter(Boolean);
+}
+
+function rankFields(query: string, fields: string[]) {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) return 999;
+  const normalizedFields = fields.map((field) => field.toLowerCase()).filter(Boolean);
+  if (normalizedFields.some((field) => field === normalizedQuery)) return 0;
+  if (normalizedFields.some((field) => field.startsWith(normalizedQuery))) return 1;
+  if (normalizedFields.some((field) => field.includes(normalizedQuery))) return 2;
+
+  const tokens = searchTokens(normalizedQuery);
+  const combined = normalizedFields.join(" ");
+  if (tokens.length > 0 && tokens.every((token) => combined.includes(token))) return 3;
+  return 999;
+}
+
+function rankedTake<T>(rows: T[], query: string, limit: number, fieldsFor: (row: T) => string[]) {
+  return rows
+    .map((row, index) => ({ row, index, rank: rankFields(query, fieldsFor(row)) }))
+    .filter((candidate) => candidate.rank < 999)
+    .sort((left, right) => left.rank - right.rank || left.index - right.index)
+    .slice(0, limit)
+    .map((candidate) => candidate.row);
 }
 
 function demoStaffForHotel(hotelId: string, hotelIndex: number): StaffMember[] {
@@ -649,6 +683,20 @@ export function demoLoadTodayDesk(hotelId: string): TodayDeskPayload {
   };
 }
 
+export function demoLoadFrontDeskReservations(hotelId: string, rangeStart: string, rangeEnd: string): FrontDeskReservationsPayload {
+  demoGetHotel(hotelId);
+  return {
+    today: todayString(),
+    rangeStart,
+    rangeEnd,
+    rooms: roomsFor(hotelId),
+    reservations: reservationsFor(hotelId)
+      .filter((reservation) => activeReservationStatuses.includes(reservation.status))
+      .filter((reservation) => reservation.checkIn < rangeEnd && reservation.checkOut > rangeStart)
+      .sort((left, right) => left.checkIn.localeCompare(right.checkIn) || left.roomNumber.localeCompare(right.roomNumber)),
+  };
+}
+
 export function demoLoadManagerDashboard(hotelId: string): ManagerDashboardPayload {
   const today = todayString();
   const reservations = reservationsFor(hotelId);
@@ -883,23 +931,21 @@ export function demoSearchFrontDesk(hotelId: string, query: string, limit = 25):
   const value = query.trim().toLowerCase();
   if (!value) return { guests: [], reservations: [], rooms: [] };
   const take = Math.max(1, Math.min(50, limit));
-  const matches = (...values: string[]) => values.some((item) => item.toLowerCase().includes(value));
   return {
-    guests: guestsFor(hotelId).filter((guest) => matches(guest.fullName, guest.email, guest.phone)).slice(0, take),
-    reservations: reservationsFor(hotelId)
-      .filter((reservation) =>
-        matches(
-          reservation.id,
-          reservation.guestName,
-          reservation.guestPhone,
-          reservation.roomNumber,
-          reservation.checkIn,
-          reservation.checkOut,
-          reservation.status,
-        ),
-      )
-      .slice(0, take),
-    rooms: roomsFor(hotelId).filter((room) => matches(room.number, room.roomType, room.status)).slice(0, take),
+    guests: rankedTake(guestsFor(hotelId), value, take, (guest) => [guest.id, guest.fullName, guest.email, guest.phone, guest.notes]),
+    reservations: rankedTake(reservationsFor(hotelId), value, take, (reservation) => [
+      reservation.id,
+      reservation.guestName,
+      reservation.guestPhone,
+      reservation.roomNumber,
+      reservation.roomType,
+      reservation.checkIn,
+      reservation.checkOut,
+      reservation.status,
+      reservation.source,
+      reservation.notes,
+    ]),
+    rooms: rankedTake(roomsFor(hotelId), value, take, (room) => [room.id, room.number, room.roomType, room.status, String(room.floor), String(room.capacity)]),
   };
 }
 

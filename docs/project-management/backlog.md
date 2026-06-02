@@ -107,6 +107,18 @@ Acceptance criteria:
 - Done: Removing a user from a hotel is covered.
 - Done: Invite-only sign-in routing and no-membership portfolio UX are validated.
 
+### Split Front Desk Workflows Into Focused Pages
+
+Status: completed on 2026-06-02.
+
+Acceptance criteria:
+
+- Done: Front-desk hub, walk-in creation, and active reservations live on focused routes.
+- Done: Search updates while typing and ranks exact, prefix, substring, and all-token matches.
+- Done: Walk-in creation no longer shares the main workspace layout and still auto-creates guests through the reservation workflow.
+- Done: Active reservations can be filtered, sorted, checked in, and checked out from a dedicated table page.
+- Done: Booking board shows active reservation spans by room across a custom date range.
+
 ## P2
 
 ### API Contract Documentation

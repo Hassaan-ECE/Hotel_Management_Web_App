@@ -4,7 +4,7 @@ Last updated: 2026-06-02
 
 ## Sprint Goal
 
-Stabilize the hosted app foundation before expanding product scope. Tenant isolation, input hardening, workflow guards, test foundation, hosted setup docs, clean-copy release-gate verification, deterministic font builds, pilot auth provisioning docs, hosted staging migration/seed validation, invite-only auth routing UX, hosted Clerk middleware/mobile sign-in hotfix, hosted hotel dashboard date/mobile-topbar fixes, mobile dashboard density/export placement polish, admin/export naming polish, gated Admin role preview, and account-modal role preview placement are now in place.
+Stabilize the hosted app foundation before expanding product scope. Tenant isolation, input hardening, workflow guards, test foundation, hosted setup docs, clean-copy release-gate verification, deterministic font builds, pilot auth provisioning docs, hosted staging migration/seed validation, invite-only auth routing UX, hosted Clerk middleware/mobile sign-in hotfix, hosted hotel dashboard date/mobile-topbar fixes, mobile dashboard density/export placement polish, admin/export naming polish, gated Admin role preview, account-modal role preview placement, and front-desk workflow split are now in place.
 
 ## Current Acceptance Criteria
 
@@ -24,6 +24,10 @@ Stabilize the hosted app foundation before expanding product scope. Tenant isola
 - The top-level `owner` permission is presented as Admin in the UI, and export downloads use hotel-specific filenames.
 - Admin role preview is feature-flagged, Clerk-user allow-listed, real Admin-only, scoped per hotel, and validates Housekeeper preview against active same-hotel staff.
 - Role preview controls live inside the account/profile modal, not in the hotel workspace layout.
+- Front-desk users have focused routes for hub, walk-in creation, and active reservations.
+- Front-desk search updates while typing and ranks exact, prefix, and all-token matches without a database extension.
+- Walk-in creation lives on its own page and still auto-creates guest records through the reservation workflow.
+- Active reservations have a sortable/filterable table and a booking-board view with custom date ranges.
 
 ## Next Implementation Packets
 
@@ -394,6 +398,72 @@ Acceptance criteria:
 - Done: Preserve the same server-side preview route and real Admin gating from Packet 15.
 - Done: Keep Housekeeper preview staff selection available in the account modal.
 - Done: Add tests proving the workspace layout does not render preview controls and the account profile page does.
+
+### Packet 17 - Instant Ranked Search And Front Desk Hub
+
+Status: completed on 2026-06-02.
+
+Owner: manager implements and verifies.
+
+Acceptance criteria:
+
+- Done: Add `/hotels/[hotelId]/front-desk` as a compact hub gated to Admin, Manager, and Front desk.
+- Done: Replace submit-only search with debounced instant search.
+- Done: Keep search API response shape unchanged.
+- Done: Rank returned candidates by exact, prefix, substring, and all-token matches without a database extension.
+- Done: Remove the standalone guest-record panel from front-desk UI.
+
+### Packet 18 - Separate Walk-In Page
+
+Status: completed on 2026-06-02.
+
+Owner: manager implements and verifies.
+
+Acceptance criteria:
+
+- Done: Add `/hotels/[hotelId]/front-desk/walk-in`.
+- Done: Keep `Create walk-in` navigation from the front-desk hub.
+- Done: Walk-in creation still auto-creates or updates the guest through the existing reservation service.
+- Done: Successful walk-in creation redirects to the reservations page.
+
+### Packet 19 - Reservations Table Page
+
+Status: completed on 2026-06-02.
+
+Owner: manager implements and verifies.
+
+Acceptance criteria:
+
+- Done: Add `/hotels/[hotelId]/front-desk/reservations`.
+- Done: Default to active reservations: `pending`, `confirmed`, and `checked-in`.
+- Done: Add table search, status filter, and sort controls.
+- Done: Keep check-in/check-out actions on the existing guarded status API route.
+
+### Packet 20 - Booking Board
+
+Status: completed on 2026-06-02.
+
+Owner: manager implements and verifies.
+
+Acceptance criteria:
+
+- Done: Add a Table / Booking board toggle on the reservations page.
+- Done: Render dates on the x-axis and rooms on the y-axis.
+- Done: Show reservation bars spanning check-in through the night before check-out.
+- Done: Default to 14 days and allow custom start/end query ranges.
+- Done: Load active reservations by hotel-scoped date overlap.
+
+### Packet 21 - Front Desk QA And PM Records
+
+Status: completed on 2026-06-02.
+
+Owner: manager implements and verifies.
+
+Acceptance criteria:
+
+- Done: Add focused component/page/search tests for the front-desk split.
+- Done: Update PM docs and release smoke checks.
+- Done: Run test, typecheck, lint, build, diff, and whitespace checks.
 
 ## Manager Review Focus
 

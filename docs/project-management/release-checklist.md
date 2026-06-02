@@ -75,7 +75,10 @@ If a future build fails because it is trying to fetch fonts from the network, tr
 Before a hosted pilot, also smoke these role flows in demo mode or staging:
 
 - Owner portfolio opens both demo hotels.
-- Front desk search, walk-in, check-in, and check-out work.
+- Front desk hub opens at `/hotels/<hotelId>/front-desk`, instant search updates while typing, and results are hotel-scoped.
+- Front desk walk-in opens at `/hotels/<hotelId>/front-desk/walk-in`, creates a checked-in reservation, and redirects to reservations.
+- Front desk reservations opens at `/hotels/<hotelId>/front-desk/reservations`; table search/filter/sort work, and check-in/check-out actions use the guarded status route.
+- Front desk booking board toggles from the reservations page, date range changes update the URL, and reservation bars align to room/date spans.
 - Housekeeping assignment, start, finish, approval, and send-back work.
 - Maintenance ticket create, update, resolve, and cancel work.
 - CSV export and JSON backup routes return data for the active hotel only.

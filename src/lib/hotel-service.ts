@@ -20,6 +20,7 @@ import {
   demoExportCsvReport,
   demoFinishHousekeepingRoom,
   demoGetHotel,
+  demoLoadFrontDeskReservations,
   demoLoadHousekeepingSupervisor,
   demoLoadHousekeepingWork,
   demoLoadManagerDashboard,
@@ -42,6 +43,7 @@ import type {
   AuditLogEntry,
   BookingRequest,
   CountRow,
+  FrontDeskReservationsPayload,
   Guest,
   GuestInput,
   HostedSession,
@@ -80,6 +82,45 @@ function nightsBetween(checkIn: string, checkOut: string) {
   const end = Date.parse(`${checkOut}T00:00:00Z`);
   if (Number.isNaN(start) || Number.isNaN(end) || end <= start) return 1;
   return Math.max(1, Math.round((end - start) / 86400000));
+}
+
+export function addDaysString(date: string, days: number) {
+  const base = Date.parse(`${date}T00:00:00Z`);
+  const timestamp = Number.isNaN(base) ? Date.now() : base;
+  return new Date(timestamp + days * 86400000).toISOString().slice(0, 10);
+}
+
+const activeReservationStatuses: ReservationStatus[] = ["pending", "confirmed", "checked-in"];
+
+function searchTokens(query: string) {
+  return query
+    .toLowerCase()
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter(Boolean);
+}
+
+function rankFields(query: string, fields: string[]) {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) return 999;
+  const normalizedFields = fields.map((field) => field.toLowerCase()).filter(Boolean);
+  if (normalizedFields.some((field) => field === normalizedQuery)) return 0;
+  if (normalizedFields.some((field) => field.startsWith(normalizedQuery))) return 1;
+  if (normalizedFields.some((field) => field.includes(normalizedQuery))) return 2;
+
+  const tokens = searchTokens(normalizedQuery);
+  const combined = normalizedFields.join(" ");
+  if (tokens.length > 0 && tokens.every((token) => combined.includes(token))) return 3;
+  return 999;
+}
+
+function rankedTake<T>(rows: T[], query: string, limit: number, fieldsFor: (row: T) => string[]) {
+  return rows
+    .map((row, index) => ({ row, index, rank: rankFields(query, fieldsFor(row)) }))
+    .filter((candidate) => candidate.rank < 999)
+    .sort((left, right) => left.rank - right.rank || left.index - right.index)
+    .slice(0, limit)
+    .map((candidate) => candidate.row);
 }
 
 function maskReservationForHousekeeping(reservation: ReservationSummary): ReservationSummary {
@@ -419,6 +460,25 @@ export async function loadTodayDesk(hotelId: string): Promise<TodayDeskPayload> 
   };
 }
 
+export async function loadFrontDeskReservations(hotelId: string, rangeStart: string, rangeEnd: string): Promise<FrontDeskReservationsPayload> {
+  if (isDemoMode()) return demoLoadFrontDeskReservations(hotelId, rangeStart, rangeEnd);
+  const [rooms, reservations] = await Promise.all([
+    queryRooms(hotelId),
+    queryReservations(
+      hotelId,
+      "AND r.status IN ('pending', 'confirmed', 'checked-in') AND r.check_in < $2 AND r.check_out > $3",
+      [rangeEnd, rangeStart],
+    ),
+  ]);
+  return {
+    today: todayString(),
+    rangeStart,
+    rangeEnd,
+    rooms,
+    reservations: reservations.filter((reservation) => activeReservationStatuses.includes(reservation.status)),
+  };
+}
+
 export async function loadManagerDashboard(hotelId: string): Promise<ManagerDashboardPayload> {
   if (isDemoMode()) return demoLoadManagerDashboard(hotelId);
   const today = todayString();
@@ -468,29 +528,35 @@ export async function searchFrontDesk(hotelId: string, query: string, limit = 25
   if (isDemoMode()) return demoSearchFrontDesk(hotelId, query, limit);
   const trimmed = query.trim();
   if (!trimmed) return { guests: [], reservations: [], rooms: [] };
-  const like = `%${trimmed.toLowerCase()}%`;
   const rowLimit = normalizeSearchLimit(limit);
+  const tokens = searchTokens(trimmed);
+  const likeParams = [`%${trimmed.toLowerCase()}%`, ...tokens.map((token) => `%${token}%`)];
+  const limitParam = likeParams.length + 2;
+  const conditionFor = (expression: string) => {
+    const tokenClauses = tokens.map((_, index) => `${expression} LIKE $${index + 3}`);
+    return tokenClauses.length > 0 ? `(${expression} LIKE $2 OR (${tokenClauses.join(" AND ")}))` : `${expression} LIKE $2`;
+  };
   const sql = getSql();
   const [guests, rooms, reservations] = await Promise.all([
     sql.query(
       `
         SELECT id, full_name AS "fullName", email, phone, notes, created_at AS "createdAt"
         FROM guests
-        WHERE hotel_id = $1 AND (lower(full_name) LIKE $2 OR lower(email) LIKE $2 OR lower(phone) LIKE $2)
+        WHERE hotel_id = $1 AND ${conditionFor("lower(concat_ws(' ', full_name, email, phone, notes))")}
         ORDER BY full_name ASC
-        LIMIT $3
+        LIMIT $${limitParam}
       `,
-      [hotelId, like, rowLimit],
+      [hotelId, ...likeParams, rowLimit],
     ),
     sql.query(
       `
         SELECT id, number, room_type AS "roomType", floor, capacity, nightly_rate_cents AS "nightlyRateCents", status
         FROM rooms
-        WHERE hotel_id = $1 AND (lower(number) LIKE $2 OR lower(room_type) LIKE $2 OR lower(status) LIKE $2)
+        WHERE hotel_id = $1 AND ${conditionFor("lower(concat_ws(' ', number, room_type, status, floor::text, capacity::text))")}
         ORDER BY number ASC
-        LIMIT $3
+        LIMIT $${limitParam}
       `,
-      [hotelId, like, rowLimit],
+      [hotelId, ...likeParams, rowLimit],
     ),
     sql.query(
       `
@@ -514,20 +580,31 @@ export async function searchFrontDesk(hotelId: string, query: string, limit = 25
         FROM reservations r
         JOIN guests g ON g.id = r.guest_id AND g.hotel_id = r.hotel_id
         JOIN rooms rm ON rm.id = r.room_id AND rm.hotel_id = r.hotel_id
-        WHERE r.hotel_id = $1 AND (
-          lower(r.id) LIKE $2 OR lower(g.full_name) LIKE $2 OR lower(g.phone) LIKE $2 OR lower(g.email) LIKE $2 OR
-          lower(rm.number) LIKE $2 OR r.check_in LIKE $2 OR r.check_out LIKE $2
-        )
+        WHERE r.hotel_id = $1 AND ${conditionFor("lower(concat_ws(' ', r.id, g.full_name, g.phone, g.email, rm.number, rm.room_type, r.check_in, r.check_out, r.status, r.source, r.notes))")}
         ORDER BY r.check_in DESC
-        LIMIT $3
+        LIMIT $${limitParam}
       `,
-      [hotelId, like, rowLimit],
+      [hotelId, ...likeParams, rowLimit],
     ),
   ]);
+  const guestRows = (guests as unknown as GuestRow[]).map(normalizeGuest);
+  const roomRows = rooms as unknown as Room[];
+  const reservationRows = (reservations as unknown as ReservationRow[]).map(normalizeReservation);
   return {
-    guests: (guests as unknown as GuestRow[]).map(normalizeGuest),
-    rooms: rooms as unknown as Room[],
-    reservations: (reservations as unknown as ReservationRow[]).map(normalizeReservation),
+    guests: rankedTake(guestRows, trimmed, rowLimit, (guest) => [guest.id, guest.fullName, guest.email, guest.phone, guest.notes]),
+    rooms: rankedTake(roomRows, trimmed, rowLimit, (room) => [room.id, room.number, room.roomType, room.status, String(room.floor), String(room.capacity)]),
+    reservations: rankedTake(reservationRows, trimmed, rowLimit, (reservation) => [
+      reservation.id,
+      reservation.guestName,
+      reservation.guestPhone,
+      reservation.roomNumber,
+      reservation.roomType,
+      reservation.checkIn,
+      reservation.checkOut,
+      reservation.status,
+      reservation.source,
+      reservation.notes,
+    ]),
   };
 }
 

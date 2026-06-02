@@ -86,6 +86,74 @@ describe("searchFrontDesk", () => {
     expect(lastSqlLimits.every((limit) => limit === 7)).toBe(true);
     expect(lastSqlLimits.length).toBe(3);
   });
+
+  test("ranks matching guests, rooms, and reservations from returned candidates", async () => {
+    mockDb = {
+      query: async <T>(query: string, params: unknown[] = []): Promise<T> => {
+        const limit = params.at(-1);
+        if (typeof limit === "number") {
+          lastSqlLimits.push(limit);
+        }
+        if (query.includes("FROM guests")) {
+          return [
+            { id: "guest-taylor", fullName: "Taylor Brooks", email: "taylor@example.com", phone: "555-0119", notes: "", createdAt: "2026-06-01" },
+            { id: "guest-jamie", fullName: "Jamie Morgan", email: "jamie@example.com", phone: "555-0101", notes: "", createdAt: "2026-06-01" },
+          ] as T;
+        }
+        if (query.includes("FROM rooms")) {
+          return [
+            { id: "room-210", number: "210", roomType: "Double Queen", floor: 2, capacity: 4, nightlyRateCents: 17900, status: "ready" },
+            { id: "room-101", number: "101", roomType: "King", floor: 1, capacity: 2, nightlyRateCents: 15900, status: "occupied" },
+          ] as T;
+        }
+        return [
+          {
+            id: "res-taylor",
+            guestId: "guest-taylor",
+            guestName: "Taylor Brooks",
+            guestPhone: "555-0119",
+            roomId: "room-210",
+            roomNumber: "210",
+            roomType: "Double Queen",
+            checkIn: "2026-06-02",
+            checkOut: "2026-06-03",
+            adults: 2,
+            children: 0,
+            nightlyRateCents: 17900,
+            totalCents: 17900,
+            source: "phone",
+            status: "confirmed",
+            notes: "",
+          },
+          {
+            id: "res-jamie",
+            guestId: "guest-jamie",
+            guestName: "Jamie Morgan",
+            guestPhone: "555-0101",
+            roomId: "room-101",
+            roomNumber: "101",
+            roomType: "King",
+            checkIn: "2026-06-01",
+            checkOut: "2026-06-03",
+            adults: 1,
+            children: 0,
+            nightlyRateCents: 15900,
+            totalCents: 31800,
+            source: "direct",
+            status: "checked-in",
+            notes: "",
+          },
+        ] as T;
+      },
+    };
+
+    const results = await searchFrontDesk(hotelId, "Jamie King", 25);
+
+    expect(results.guests.map((guest) => guest.fullName)).toEqual([]);
+    expect(results.rooms.map((room) => room.number)).toEqual([]);
+    expect(results.reservations.map((reservation) => reservation.id)).toEqual(["res-jamie"]);
+    expect(lastSqlLimits.every((limit) => limit === 25)).toBe(true);
+  });
 });
 
 describe("housekeepingInputSchema", () => {

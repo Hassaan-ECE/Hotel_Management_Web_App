@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState, useTransition } from "react";
-import { ArrowRight, BedDouble, CheckCircle2, ClipboardCheck, Download, LogOut, Play, Plus, Save, Search, Wrench, XCircle } from "lucide-react";
+import { ArrowRight, BedDouble, CheckCircle2, ClipboardCheck, Download, LogOut, Play, Plus, Save, Wrench, XCircle } from "lucide-react";
+import { FrontDeskHub } from "@/components/front-desk-workspace";
 import { Money, StatusPill } from "@/components/format";
 import { hotelBackupFilename, hotelExportFilename } from "@/lib/downloads";
 import { roleLabels } from "@/lib/roles";
@@ -19,7 +20,6 @@ import type {
   ReservationStatus,
   ReservationSummary,
   Room,
-  SearchResults,
   StaffMember,
   TodayDeskPayload,
 } from "@/lib/types";
@@ -51,12 +51,7 @@ export function HotelWorkspace({
   const role = session.role;
   const isManagerView = role === "owner" || role === "manager";
   const [message, setMessage] = useState("");
-  const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
   const [pending, startTransition] = useTransition();
-  const availableRooms = useMemo(
-    () => today.rooms.filter((room) => ["available", "ready", "dirty"].includes(room.status)),
-    [today.rooms],
-  );
   const pendingIssueReports = today.maintenanceTickets.filter((ticket) => ticket.status === "pending-review");
 
   async function request(path: string, init?: RequestInit) {
@@ -90,82 +85,6 @@ export function HotelWorkspace({
         router.refresh();
       });
     });
-  }
-
-  function searchFrontDesk(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const query = String(form.get("query") ?? "");
-    refreshWith(
-      async () => {
-        const response = await request(`/api/hotels/${hotel.id}/search?q=${encodeURIComponent(query)}`, {
-          method: "GET",
-          headers: {},
-        });
-        setSearchResults((await response.json()) as SearchResults);
-      },
-      "Search completed.",
-    );
-  }
-
-  function createWalkIn(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const target = event.currentTarget;
-    const form = new FormData(target);
-    refreshWith(
-      async () => {
-        await request(`/api/hotels/${hotel.id}/walk-ins`, {
-          method: "POST",
-          body: JSON.stringify({
-            fullName: String(form.get("fullName") ?? ""),
-            email: String(form.get("email") ?? ""),
-            phone: String(form.get("phone") ?? ""),
-            guestNotes: String(form.get("guestNotes") ?? ""),
-            roomId: String(form.get("roomId") ?? ""),
-            checkIn: String(form.get("checkIn") ?? today.today),
-            checkOut: String(form.get("checkOut") ?? today.today),
-            adults: Number(form.get("adults") ?? 1),
-            children: Number(form.get("children") ?? 0),
-            nightlyRateCents: Number(form.get("nightlyRateCents") ?? 0),
-            notes: String(form.get("notes") ?? ""),
-          }),
-        });
-        target.reset();
-      },
-      "Walk-in reservation created.",
-    );
-  }
-
-  function saveGuest(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const target = event.currentTarget;
-    const form = new FormData(target);
-    refreshWith(
-      async () => {
-        await request(`/api/hotels/${hotel.id}/guests`, {
-          method: "POST",
-          body: JSON.stringify({
-            fullName: String(form.get("fullName") ?? ""),
-            email: String(form.get("email") ?? ""),
-            phone: String(form.get("phone") ?? ""),
-            notes: String(form.get("notes") ?? ""),
-          }),
-        });
-        target.reset();
-      },
-      "Guest record saved.",
-    );
-  }
-
-  function updateReservationStatus(id: string, status: ReservationStatus) {
-    refreshWith(
-      () =>
-        request(`/api/hotels/${hotel.id}/reservations/${id}/status`, {
-          method: "PATCH",
-          body: JSON.stringify({ status }),
-        }).then(() => undefined),
-      "Reservation status updated.",
-    );
   }
 
   function assignHousekeeping(event: FormEvent<HTMLFormElement>) {
@@ -301,16 +220,7 @@ export function HotelWorkspace({
         />
       ) : null}
       {role === "front-desk" ? (
-        <FrontDeskWorkspace
-          today={today}
-          availableRooms={availableRooms}
-          searchResults={searchResults}
-          pending={pending}
-          onSearch={searchFrontDesk}
-          onWalkIn={createWalkIn}
-          onSaveGuest={saveGuest}
-          onStatus={updateReservationStatus}
-        />
+        <FrontDeskHub hotelId={hotel.id} hotelName={hotel.name} today={today} />
       ) : null}
       {role === "housekeeping-supervisor" ? (
         <HousekeepingSupervisorWorkspace
@@ -402,70 +312,6 @@ function ExportPanel({ hotelId, hotelName }: { hotelId: string; hotelName: strin
         </a>
       </div>
     </Panel>
-  );
-}
-
-function FrontDeskWorkspace({
-  today,
-  availableRooms,
-  searchResults,
-  pending,
-  onSearch,
-  onWalkIn,
-  onSaveGuest,
-  onStatus,
-}: {
-  today: TodayDeskPayload;
-  availableRooms: Room[];
-  searchResults: SearchResults | null;
-  pending: boolean;
-  onSearch: (event: FormEvent<HTMLFormElement>) => void;
-  onWalkIn: (event: FormEvent<HTMLFormElement>) => void;
-  onSaveGuest: (event: FormEvent<HTMLFormElement>) => void;
-  onStatus: (id: string, status: ReservationStatus) => void;
-}) {
-  return (
-    <>
-      <section className="grid metric-grid">
-        <Metric label="Arrivals" value={String(today.stats.arrivals)} />
-        <Metric label="Departures" value={String(today.stats.departures)} />
-        <Metric label="In house" value={String(today.stats.inHouse)} />
-        <Metric label="Rooms ready" value={String(today.stats.roomsReady)} />
-        <Metric label="Pending requests" value={String(today.stats.pendingRequests)} />
-        <Metric label="Open maintenance" value={String(today.stats.openMaintenance)} />
-      </section>
-
-      <div className="workspace-grid">
-        <section className="stack">
-          <Panel title="Guest, room, or reservation search">
-            <form className="form-grid" onSubmit={onSearch}>
-              <label className="full-row">
-                Search
-                <input name="query" placeholder="Name, phone, email, room, reservation id, or date" required />
-              </label>
-              <button className="primary full-row" type="submit" disabled={pending}>
-                <Search size={16} /> Search
-              </button>
-            </form>
-            <SearchResultsView results={searchResults} />
-          </Panel>
-          <Panel title="Arrivals and in-house guests">
-            <ReservationTable rows={[...today.arrivals, ...today.inHouse]} onStatus={onStatus} pending={pending} />
-          </Panel>
-        </section>
-        <aside className="stack">
-          <Panel title="Walk-in reservation">
-            <WalkInForm rooms={availableRooms} today={today.today} pending={pending} onSubmit={onWalkIn} />
-          </Panel>
-          <Panel title="Guest record">
-            <GuestForm pending={pending} onSubmit={onSaveGuest} />
-          </Panel>
-          <Panel title="Room readiness">
-            <RoomList rows={today.rooms} compact />
-          </Panel>
-        </aside>
-      </div>
-    </>
   );
 }
 
@@ -895,98 +741,6 @@ function EmptyState({ message }: { message: string }) {
   return <p className="empty-state">{message}</p>;
 }
 
-function WalkInForm({
-  rooms,
-  today,
-  pending,
-  onSubmit,
-}: {
-  rooms: Room[];
-  today: string;
-  pending: boolean;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-}) {
-  return (
-    <form className="form-grid" onSubmit={onSubmit}>
-      <label>
-        Guest name
-        <input name="fullName" required />
-      </label>
-      <label>
-        Phone
-        <input name="phone" />
-      </label>
-      <label>
-        Email
-        <input name="email" />
-      </label>
-      <label>
-        Room
-        <select name="roomId" required>
-          {rooms.map((room) => (
-            <option key={room.id} value={room.id}>
-              Room {room.number} - {room.roomType}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        Check in
-        <input name="checkIn" type="date" defaultValue={today} required />
-      </label>
-      <label>
-        Check out
-        <input name="checkOut" type="date" required />
-      </label>
-      <label>
-        Adults
-        <input name="adults" type="number" min="1" defaultValue="1" />
-      </label>
-      <label>
-        Children
-        <input name="children" type="number" min="0" defaultValue="0" />
-      </label>
-      <label>
-        Nightly rate cents
-        <input name="nightlyRateCents" type="number" min="0" defaultValue={rooms[0]?.nightlyRateCents ?? 0} />
-      </label>
-      <label>
-        Notes
-        <input name="notes" />
-      </label>
-      <button className="primary full-row" type="submit" disabled={pending}>
-        <Plus size={16} /> Create walk-in
-      </button>
-    </form>
-  );
-}
-
-function GuestForm({ pending, onSubmit }: { pending: boolean; onSubmit: (event: FormEvent<HTMLFormElement>) => void }) {
-  return (
-    <form className="form-grid" onSubmit={onSubmit}>
-      <label>
-        Guest name
-        <input name="fullName" required />
-      </label>
-      <label>
-        Phone
-        <input name="phone" />
-      </label>
-      <label>
-        Email
-        <input name="email" />
-      </label>
-      <label className="full-row">
-        Notes
-        <input name="notes" />
-      </label>
-      <button className="primary full-row" type="submit" disabled={pending}>
-        <Plus size={16} /> Save guest
-      </button>
-    </form>
-  );
-}
-
 const maintenancePriorityOptions: MaintenancePriority[] = ["low", "medium", "high", "critical"];
 const activeMaintenanceStatusOptions: MaintenanceStatus[] = ["open", "in-progress", "blocked"];
 const editableMaintenanceStatusOptions: MaintenanceStatus[] = ["open", "in-progress", "blocked", "resolved", "cancelled"];
@@ -1185,48 +939,6 @@ function MaintenanceQueue({
           </article>
         );
       })}
-    </div>
-  );
-}
-
-function SearchResultsView({ results }: { results: SearchResults | null }) {
-  if (!results) return null;
-
-  return (
-    <div className="grid result-grid">
-      <article className="card stack">
-        <strong>Guests</strong>
-        {results.guests.length === 0 ? <p className="muted">No guests found.</p> : null}
-        {results.guests.map((guest) => (
-          <p key={guest.id}>
-            {guest.fullName}
-            <br />
-            <span className="muted">{[guest.phone, guest.email].filter(Boolean).join(" ")}</span>
-          </p>
-        ))}
-      </article>
-      <article className="card stack">
-        <strong>Reservations</strong>
-        {results.reservations.length === 0 ? <p className="muted">No reservations found.</p> : null}
-        {results.reservations.map((reservation) => (
-          <p key={reservation.id}>
-            Room {reservation.roomNumber} - {reservation.guestName}
-            <br />
-            <StatusPill value={reservation.status} />
-          </p>
-        ))}
-      </article>
-      <article className="card stack">
-        <strong>Rooms</strong>
-        {results.rooms.length === 0 ? <p className="muted">No rooms found.</p> : null}
-        {results.rooms.map((room) => (
-          <p key={room.id}>
-            Room {room.number}
-            <br />
-            <StatusPill value={room.status} />
-          </p>
-        ))}
-      </article>
     </div>
   );
 }
