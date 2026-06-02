@@ -96,8 +96,8 @@ describe("packet 13 hotel workspace layout", () => {
   });
 });
 
-describe("packet 15 admin role preview UI", () => {
-  test("shows role preview panel only for enabled admin session", () => {
+describe("packet 16 account-contained role preview", () => {
+  test("does not render role preview controls in the hotel workspace layout", () => {
     const html = renderToStaticMarkup(
       <HotelWorkspace
         hotel={hotel}
@@ -108,45 +108,7 @@ describe("packet 15 admin role preview UI", () => {
       />,
     );
 
-    expect(html.includes("Admin role preview")).toBe(true);
-    expect(html.includes("Testing as Admin")).toBe(true);
-    expect(html.includes("Housekeeper")).toBe(true);
-    expect(html.includes("Real role: Admin")).toBe(true);
-
-    const staffHtml = renderToStaticMarkup(
-      <HotelWorkspace
-        hotel={hotel}
-        session={{ ...adminSession, role: "front-desk", actualRole: "front-desk", rolePreviewEnabled: false }}
-        today={today}
-        manager={null}
-        housekeepers={[]}
-      />,
-    );
-
-    expect(staffHtml.includes("Admin role preview")).toBe(false);
-  });
-
-  test("keeps exit controls visible while previewing housekeeper", () => {
-    const html = renderToStaticMarkup(
-      <HotelWorkspace
-        hotel={hotel}
-        session={{
-          ...adminSession,
-          role: "housekeeping",
-          actualRole: "owner",
-          previewRole: "housekeeping",
-          previewStaffId: "staff-hk",
-          rolePreviewEnabled: true,
-        }}
-        today={today}
-        manager={null}
-        housekeepers={[{ id: "staff-hk", fullName: "Ava Patel", role: "housekeeping", active: true }]}
-      />,
-    );
-
-    expect(html.includes("Admin role preview")).toBe(true);
-    expect(html.includes("Testing as Housekeeper")).toBe(true);
-    expect(html.includes("Exit preview")).toBe(true);
-    expect(html.includes("Staff: Ava Patel")).toBe(true);
+    expect(html.includes("Admin role preview")).toBe(false);
+    expect(html.includes("Profile role")).toBe(false);
   });
 });

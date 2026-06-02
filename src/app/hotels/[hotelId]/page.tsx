@@ -26,9 +26,10 @@ export default async function HotelPage({ params }: { params: Promise<{ hotelId:
   ]);
   const today = limitTodayForRole(session.role, rawToday, session.previewStaffId ?? session.userId);
   const focusedHousekeepingMode = demoMode && session.role === "housekeeping";
+  const rolePreview = session.rolePreviewEnabled ? { hotelId, hotelName: hotel.name, session, housekeepers: supervisor?.housekeepers ?? [] } : undefined;
   return (
     <div className="page-shell">
-      {focusedHousekeepingMode ? null : <AppTopbar />}
+      {focusedHousekeepingMode ? null : <AppTopbar rolePreview={rolePreview} />}
       <HotelWorkspace
         hotel={hotel}
         session={session}

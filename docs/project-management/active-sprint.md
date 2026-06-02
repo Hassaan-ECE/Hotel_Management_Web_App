@@ -4,7 +4,7 @@ Last updated: 2026-06-02
 
 ## Sprint Goal
 
-Stabilize the hosted app foundation before expanding product scope. Tenant isolation, input hardening, workflow guards, test foundation, hosted setup docs, clean-copy release-gate verification, deterministic font builds, pilot auth provisioning docs, hosted staging migration/seed validation, invite-only auth routing UX, hosted Clerk middleware/mobile sign-in hotfix, hosted hotel dashboard date/mobile-topbar fixes, mobile dashboard density/export placement polish, admin/export naming polish, and gated Admin role preview are now in place.
+Stabilize the hosted app foundation before expanding product scope. Tenant isolation, input hardening, workflow guards, test foundation, hosted setup docs, clean-copy release-gate verification, deterministic font builds, pilot auth provisioning docs, hosted staging migration/seed validation, invite-only auth routing UX, hosted Clerk middleware/mobile sign-in hotfix, hosted hotel dashboard date/mobile-topbar fixes, mobile dashboard density/export placement polish, admin/export naming polish, gated Admin role preview, and account-modal role preview placement are now in place.
 
 ## Current Acceptance Criteria
 
@@ -23,6 +23,7 @@ Stabilize the hosted app foundation before expanding product scope. Tenant isola
 - Metric cards are denser on phone widths, and manager export actions are moved out of the page title into a dedicated data exports panel.
 - The top-level `owner` permission is presented as Admin in the UI, and export downloads use hotel-specific filenames.
 - Admin role preview is feature-flagged, Clerk-user allow-listed, real Admin-only, scoped per hotel, and validates Housekeeper preview against active same-hotel staff.
+- Role preview controls live inside the account/profile modal, not in the hotel workspace layout.
 
 ## Next Implementation Packets
 
@@ -370,6 +371,29 @@ Acceptance criteria:
 - Done: Make `requireHotelSession` use the preview role as the effective server role while preserving `actualRole`.
 - Done: Validate Housekeeper preview against active same-hotel staff and use the selected staff id for assigned housekeeping work.
 - Done: Add focused schema, authz, route, UI, and service tests.
+
+### Packet 16 - Move Role Preview Into Account Modal
+
+Status: completed on 2026-06-02.
+
+Owner: manager implements and verifies.
+
+Likely files:
+
+- `src/components/account-user-button.tsx`
+- `src/components/app-topbar.tsx`
+- `src/components/hotel-workspace.tsx`
+- `src/app/hotels/[hotelId]/page.tsx`
+- `src/app/globals.css`
+- focused component tests.
+
+Acceptance criteria:
+
+- Done: Remove the visible role preview panel from the hotel workspace layout.
+- Done: Add the role dropdown under the Clerk account/profile modal for the active hotel.
+- Done: Preserve the same server-side preview route and real Admin gating from Packet 15.
+- Done: Keep Housekeeper preview staff selection available in the account modal.
+- Done: Add tests proving the workspace layout does not render preview controls and the account profile page does.
 
 ## Manager Review Focus
 

@@ -1,10 +1,10 @@
 import { Building2, Hotel, LogIn } from "lucide-react";
 import Link from "next/link";
-import { UserButton } from "@clerk/nextjs";
+import { AccountUserButton, type RolePreviewAccountContext } from "@/components/account-user-button";
 import { DemoLogoutButton } from "@/components/demo-logout-button";
 import { getIdentity, isClerkConfigured, isDemoMode, listMembershipsForUser } from "@/lib/authz";
 
-export async function AppTopbar() {
+export async function AppTopbar({ rolePreview }: { rolePreview?: RolePreviewAccountContext } = {}) {
   const demoMode = isDemoMode();
   const identity = await getIdentity();
   let homeHref = "/portfolio";
@@ -40,7 +40,7 @@ export async function AppTopbar() {
             <LogIn size={16} /> <span className="button-label">Demo sign in</span>
           </Link>
         ) : isClerkConfigured() ? (
-          <UserButton />
+          <AccountUserButton rolePreview={rolePreview} />
         ) : (
           <Link className="button" href="/sign-in" aria-label="Sign in">
             <LogIn size={16} /> <span className="button-label">Sign in</span>

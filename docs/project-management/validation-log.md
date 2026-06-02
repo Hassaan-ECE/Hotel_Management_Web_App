@@ -1019,3 +1019,60 @@ Notes:
 - Role preview remains off by default through `.env.example`.
 - Hosted use requires both `HOTEL_APP_ROLE_PREVIEW_ENABLED="true"` and an approved Clerk user id in `HOTEL_APP_ROLE_PREVIEW_USER_IDS`.
 - The preview route checks real Admin membership and ignores preview state for that gate.
+
+## 2026-06-02 Packet 16 Account-Modal Role Preview Placement
+
+Context:
+
+- User reported the role preview controls were not visible in production and wanted the feature moved out of the hotel workspace layout.
+- Moved the Admin role preview UI into the Clerk account/profile modal as a custom `Role preview` profile page.
+- Preserved the same Packet 15 server routes, feature flag, allow-list, real Admin gate, hotel scoping, and Housekeeper staff selection.
+
+Checks run:
+
+```powershell
+bun test --isolate test\account-user-button-packet16.test.tsx test\hotel-workspace-packet13.test.tsx
+```
+
+Result: passed. 5 tests passed across 2 files with 20 assertions.
+
+```powershell
+bun run test
+```
+
+Result: passed. 96 tests passed across 13 files with 301 assertions.
+
+```powershell
+bun run typecheck
+```
+
+Result: passed.
+
+```powershell
+bun run lint
+```
+
+Result: passed.
+
+```powershell
+bun run build
+```
+
+Result: passed. Build output includes `/api/hotels/[hotelId]/role-preview` and `Proxy (Middleware)`.
+
+```powershell
+git diff --check
+```
+
+Result: passed, with existing CRLF normalization warnings only.
+
+```powershell
+rg -n "[ \t]+$" docs\project-management src test
+```
+
+Result: passed with no matches.
+
+Notes:
+
+- The hotel workspace no longer renders `Admin role preview` or `Profile role`, keeping the deployed page layout stable.
+- Hosted use path is now: open a hotel, click the user/account button, open `Manage account`, select `Role preview`, choose a role, and apply.
