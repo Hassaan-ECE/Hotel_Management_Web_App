@@ -883,3 +883,42 @@ Notes:
 - Added service-layer normalization for guest, reservation, booking-request, housekeeping, maintenance, and audit date fields.
 - Added `test/date-normalization-packet12.test.ts` to cover Neon-style `Date` rows before React rendering.
 - Updated the mobile topbar to keep brand, workspace/home action, and account controls on one compact row.
+
+## 2026-06-01 Packet 13 Mobile Dashboard Density And Export Placement
+
+Context:
+
+- Hosted smoke testing passed sign-in, portfolio, hotel click-through, and iPhone topbar checks.
+- Follow-up UX notes: metric cards had too much empty space on iPhone, and CSV/backup downloads were too prominent in the hotel page title.
+
+Checks run:
+
+```powershell
+bun run test
+```
+
+Result: passed. 74 tests passed across 9 files with 244 assertions.
+
+```powershell
+bun run typecheck
+```
+
+Result: passed.
+
+```powershell
+bun run lint
+```
+
+Result: passed.
+
+```powershell
+bun run build
+```
+
+Result: passed. Build output still included `Proxy (Middleware)`.
+
+Notes:
+
+- Mobile metric cards now use compact two-column tiles.
+- Owner/manager export links moved from the page title to a `Data exports` panel.
+- Added `test/hotel-workspace-packet13.test.tsx` to cover export placement.

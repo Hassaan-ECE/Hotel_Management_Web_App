@@ -81,3 +81,4 @@ Before a hosted pilot, also smoke these role flows in demo mode or staging:
 - Vercel Preview on iPhone 15 Pro Max: sign-in redirects, no public sign-up surface, owner portfolio, staff hotel redirect, no-membership panel, and core pages fit without broken mobile layout.
 - Production iPhone 15 Pro Max auth check: sign-in page has no horizontal overflow, Clerk card stays inside the viewport, and post-sign-in navigation settles on the expected page.
 - Production hotel workspace check: opening each hotel from portfolio does not show React object/date rendering errors, and the mobile topbar remains one compact row after sign-in.
+- Production mobile dashboard check: metric cards scan as compact two-column tiles, and export/download actions appear in `Data exports` instead of the page title.

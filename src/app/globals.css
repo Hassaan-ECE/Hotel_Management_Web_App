@@ -469,6 +469,16 @@ svg {
   gap: 12px;
 }
 
+.export-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.export-actions .button {
+  justify-content: flex-start;
+  width: 100%;
+}
+
 .maintenance-queue {
   display: grid;
   gap: 12px;
@@ -1149,6 +1159,26 @@ button.primary:hover,
   .inline-form,
   .maintenance-ticket-form {
     grid-template-columns: 1fr;
+  }
+
+  .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .metric-card {
+    min-height: 78px;
+    padding: 12px;
+  }
+
+  .metric-card span {
+    font-size: 0.68rem;
+    line-height: 1.2;
+  }
+
+  .metric-card strong {
+    margin-top: 8px;
+    font-size: 1.32rem;
   }
 
   .maintenance-ticket-heading {

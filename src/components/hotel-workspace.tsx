@@ -284,25 +284,13 @@ export function HotelWorkspace({
           <h1>{hotel.name}</h1>
           <p className="muted">Data shown here is scoped to this hotel and filtered for this role.</p>
         </div>
-        {isManagerView ? (
-          <div className="actions">
-            <a className="button" href={`/api/hotels/${hotel.id}/exports/reservations`}>
-              <Download size={16} /> Reservations CSV
-            </a>
-            <a className="button" href={`/api/hotels/${hotel.id}/exports/rooms`}>
-              <Download size={16} /> Rooms CSV
-            </a>
-            <a className="button" href={`/api/hotels/${hotel.id}/backup`}>
-              <Download size={16} /> Backup JSON
-            </a>
-          </div>
-        ) : null}
       </div>
 
       {message ? <p className={message.includes("failed") || message.includes("cannot") ? "error-text" : "notice"}>{message}</p> : null}
 
       {isManagerView ? (
         <ManagerWorkspace
+          hotelId={hotel.id}
           today={today}
           manager={manager}
           pendingIssueReports={pendingIssueReports}
@@ -341,12 +329,14 @@ export function HotelWorkspace({
 }
 
 function ManagerWorkspace({
+  hotelId,
   today,
   manager,
   pendingIssueReports,
   pending,
   onReviewIssue,
 }: {
+  hotelId: string;
   today: TodayDeskPayload;
   manager: ManagerDashboardPayload | null;
   pendingIssueReports: MaintenanceTicket[];
@@ -386,9 +376,28 @@ function ManagerWorkspace({
           <Panel title="Recent audit">
             <AuditList rows={manager.recentAudit} />
           </Panel>
+          <ExportPanel hotelId={hotelId} />
         </aside>
       </div>
     </>
+  );
+}
+
+function ExportPanel({ hotelId }: { hotelId: string }) {
+  return (
+    <Panel title="Data exports">
+      <div className="export-actions">
+        <a className="button" href={`/api/hotels/${hotelId}/exports/reservations`}>
+          <Download size={16} /> Reservations CSV
+        </a>
+        <a className="button" href={`/api/hotels/${hotelId}/exports/rooms`}>
+          <Download size={16} /> Rooms CSV
+        </a>
+        <a className="button" href={`/api/hotels/${hotelId}/backup`}>
+          <Download size={16} /> Backup JSON
+        </a>
+      </div>
+    </Panel>
   );
 }
 
