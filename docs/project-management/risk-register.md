@@ -1,6 +1,6 @@
 # Risk Register
 
-Last updated: 2026-06-01
+Last updated: 2026-06-02
 
 ## Active Risks
 
@@ -119,6 +119,24 @@ Mitigation:
 
 - Do not revert unrelated changes.
 - Review diffs before implementation work that touches seed, demo store, or fixture paths.
+
+### R9 - Role Preview Could Become An Authorization Bypass If Ungated
+
+Severity: medium
+
+Status: mitigated on 2026-06-02 by Packet 15.
+
+Admin role preview is useful for one-account hosted QA, but a broad production debug role-switcher would weaken the app's authorization model.
+
+Mitigation:
+
+- Done: keep real `hotel_memberships.role = owner` as the only source of Admin authority.
+- Done: default role preview off with `HOTEL_APP_ROLE_PREVIEW_ENABLED="false"`.
+- Done: require an explicit Clerk user id allow-list through `HOTEL_APP_ROLE_PREVIEW_USER_IDS`.
+- Done: require real Admin membership before setting or clearing preview cookies.
+- Done: scope preview cookies by hotel id and ignore them for other hotels or non-Admin users.
+- Done: validate Housekeeper preview against active same-hotel staff.
+- Continue disabling the feature when broad pilot users no longer need one-account role smoke testing.
 
 ## Review Triggers
 

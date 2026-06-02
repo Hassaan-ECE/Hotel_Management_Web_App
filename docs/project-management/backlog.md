@@ -1,6 +1,6 @@
 # Backlog
 
-Last updated: 2026-06-01
+Last updated: 2026-06-02
 
 Priority scale:
 
@@ -118,10 +118,25 @@ Acceptance criteria:
 
 ### Manual QA Scripts By Role
 
+Status: partially complete. Packet 15 added gated one-account Admin role preview for hosted smoke testing; written step-by-step scripts and browser automation are still open.
+
 Acceptance criteria:
 
 - Role-based smoke scripts exist for owner, manager, front desk, housekeeping supervisor, housekeeper, and maintenance.
 - Scripts include demo credentials and expected UI outcomes.
+
+### Gated Admin Role Preview For Hosted QA
+
+Status: completed on 2026-06-02.
+
+Acceptance criteria:
+
+- Done: Real `owner` membership remains the source of Admin authority.
+- Done: Preview is disabled by default and requires `HOTEL_APP_ROLE_PREVIEW_ENABLED="true"`.
+- Done: Preview is restricted to explicit Clerk user ids through `HOTEL_APP_ROLE_PREVIEW_USER_IDS`.
+- Done: Preview changes the effective server role for the active hotel without mutating `hotel_memberships`.
+- Done: Housekeeper preview requires an active same-hotel staff row and uses that staff id for assigned housekeeping work.
+- Done: Focused tests cover schema validation, route gating, authz behavior, UI rendering, and housekeeping staff scoping.
 
 ### Clean Clone Setup Verification
 

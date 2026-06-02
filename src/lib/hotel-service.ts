@@ -8,6 +8,7 @@ import {
   isReservationTransitionAllowed,
   normalizeSearchLimit,
 } from "@/lib/validation";
+import { appRoles } from "@/lib/roles";
 import {
   demoApproveHousekeepingRoom,
   demoAssignHousekeepingTask,
@@ -64,7 +65,7 @@ import type {
   WalkInInput,
 } from "@/lib/types";
 
-const allHotelRoles = ["owner", "manager", "front-desk", "housekeeping", "housekeeping-supervisor", "maintenance"] as const;
+const allHotelRoles = appRoles;
 
 export function createId(prefix: string) {
   return `${prefix}_${Date.now().toString(36)}_${crypto.randomUUID().slice(0, 8)}`;
@@ -314,6 +315,18 @@ async function queryStaff(hotelId: string, role = "housekeeping") {
     WHERE hotel_id = ${hotelId} AND role = ${role} AND active = true
     ORDER BY full_name ASC
   `;
+}
+
+export async function assertHousekeeperPreviewStaff(hotelId: string, staffId: string) {
+  if (isDemoMode()) return;
+  const sql = getSql();
+  const rows = await sql<StaffRow[]>`
+    SELECT id, full_name AS "fullName", role, active
+    FROM staff
+    WHERE id = ${staffId} AND hotel_id = ${hotelId} AND role = 'housekeeping' AND active = true
+    LIMIT 1
+  `;
+  if (!rows[0]) throw notFound("Housekeeper was not found for this hotel.");
 }
 
 async function queryAudit(hotelId: string, limit = 12) {
@@ -698,10 +711,14 @@ export async function assignHousekeepingTask(hotelId: string, session: HostedSes
   return { id: taskId };
 }
 
-async function housekeepingTaskForRoom(hotelId: string, roomId: string, staffUserId?: string) {
+function housekeepingStaffScope(session: HostedSession) {
+  return session.role === "housekeeping" ? (session.previewStaffId ?? session.userId) : undefined;
+}
+
+async function housekeepingTaskForRoom(hotelId: string, roomId: string, staffScopeId?: string) {
   const sql = getSql();
-  const staffFilter = staffUserId ? "AND (s.clerk_user_id = $3 OR ht.assignee_staff_id = $3)" : "";
-  const params = staffUserId ? [hotelId, roomId, staffUserId] : [hotelId, roomId];
+  const staffFilter = staffScopeId ? "AND (s.clerk_user_id = $3 OR ht.assignee_staff_id = $3)" : "";
+  const params = staffScopeId ? [hotelId, roomId, staffScopeId] : [hotelId, roomId];
   const rows = await sql.query(
     `
       SELECT ht.id, ht.status, ht.room_id AS "roomId", ht.assignee_staff_id AS "assigneeStaffId"
@@ -720,7 +737,7 @@ async function housekeepingTaskForRoom(hotelId: string, roomId: string, staffUse
 
 export async function startHousekeepingRoom(hotelId: string, session: HostedSession, roomId: string) {
   if (isDemoMode()) return demoStartHousekeepingRoom(hotelId, session, roomId);
-  const task = await housekeepingTaskForRoom(hotelId, roomId, session.role === "housekeeping" ? session.userId : undefined);
+  const task = await housekeepingTaskForRoom(hotelId, roomId, housekeepingStaffScope(session));
   if (!isHousekeepingActionAllowed(task.status, "start")) {
     throw badRequest(`Cannot start housekeeping when task is "${task.status}".`);
   }
@@ -733,7 +750,7 @@ export async function startHousekeepingRoom(hotelId: string, session: HostedSess
 
 export async function finishHousekeepingRoom(hotelId: string, session: HostedSession, roomId: string) {
   if (isDemoMode()) return demoFinishHousekeepingRoom(hotelId, session, roomId);
-  const task = await housekeepingTaskForRoom(hotelId, roomId, session.role === "housekeeping" ? session.userId : undefined);
+  const task = await housekeepingTaskForRoom(hotelId, roomId, housekeepingStaffScope(session));
   if (!isHousekeepingActionAllowed(task.status, "finish")) {
     throw badRequest(`Cannot finish housekeeping when task is "${task.status}".`);
   }
@@ -911,10 +928,11 @@ export async function cancelRoomIssueReport(hotelId: string, session: HostedSess
 export async function loadHousekeepingWork(hotelId: string, session: HostedSession) {
   if (isDemoMode()) return demoLoadHousekeepingWork(hotelId, session);
   const today = todayString();
+  const staffScopeId = session.previewStaffId ?? session.userId;
   const tasks = await queryHousekeeping(
     hotelId,
-    "AND ht.status NOT IN ('ready', 'blocked') AND s.clerk_user_id = $2",
-    [session.userId],
+    "AND ht.status NOT IN ('ready', 'blocked') AND (s.clerk_user_id = $2 OR ht.assignee_staff_id = $2)",
+    [staffScopeId],
   );
   const [rooms, arrivals, departures] = await Promise.all([
     queryRooms(hotelId),

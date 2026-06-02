@@ -961,3 +961,61 @@ Notes:
 
 - Export and backup response headers now use sanitized hotel-specific filenames.
 - Export panel labels now read `Reservation list`, `Room inventory`, and `Full hotel backup`.
+
+## 2026-06-02 Packet 15 Gated Admin Role Preview
+
+Context:
+
+- User requested one-account role testing without adding a production debug role-switcher or changing Clerk public metadata.
+- Added a feature-flagged, Clerk-user allow-listed Admin role preview that preserves real `hotel_memberships.role = owner` while using a short-lived hotel-scoped cookie for the effective server role.
+- Housekeeper preview validates and uses an active same-hotel staff id so assigned housekeeping work behaves realistically.
+
+Checks run:
+
+```powershell
+bun test --isolate test\authz-role-preview-packet15.test.ts test\role-preview-route-packet15.test.ts test\hotel-workspace-packet13.test.tsx test\validation-packet-2.test.ts test\hotel-service-workflows.test.ts
+```
+
+Result: passed. 62 tests passed across 5 files with 176 assertions.
+
+```powershell
+bun run test
+```
+
+Result: passed. 94 tests passed across 12 files with 296 assertions.
+
+```powershell
+bun run typecheck
+```
+
+Result: passed.
+
+```powershell
+bun run lint
+```
+
+Result: passed.
+
+```powershell
+bun run build
+```
+
+Result: passed. Build output includes `/api/hotels/[hotelId]/role-preview` and `Proxy (Middleware)`.
+
+```powershell
+git diff --check
+```
+
+Result: passed, with existing CRLF normalization warnings only.
+
+```powershell
+rg -n "[ \t]+$" .env.example docs\project-management src test
+```
+
+Result: passed with no matches.
+
+Notes:
+
+- Role preview remains off by default through `.env.example`.
+- Hosted use requires both `HOTEL_APP_ROLE_PREVIEW_ENABLED="true"` and an approved Clerk user id in `HOTEL_APP_ROLE_PREVIEW_USER_IDS`.
+- The preview route checks real Admin membership and ignores preview state for that gate.

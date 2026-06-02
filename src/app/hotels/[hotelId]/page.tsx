@@ -22,9 +22,9 @@ export default async function HotelPage({ params }: { params: Promise<{ hotelId:
   const [rawToday, manager, supervisor] = await Promise.all([
     loadTodayDesk(hotelId),
     roleNeedsManager(session.role) ? loadManagerDashboard(hotelId) : Promise.resolve(null),
-    roleNeedsHousekeepers(session.role) ? loadHousekeepingSupervisor(hotelId) : Promise.resolve(null),
+    roleNeedsHousekeepers(session.role) || session.rolePreviewEnabled ? loadHousekeepingSupervisor(hotelId) : Promise.resolve(null),
   ]);
-  const today = limitTodayForRole(session.role, rawToday, session.userId);
+  const today = limitTodayForRole(session.role, rawToday, session.previewStaffId ?? session.userId);
   const focusedHousekeepingMode = demoMode && session.role === "housekeeping";
   return (
     <div className="page-shell">
@@ -49,11 +49,11 @@ function roleNeedsHousekeepers(role: AppRole) {
   return roleNeedsManager(role) || role === "housekeeping-supervisor";
 }
 
-function limitTodayForRole(role: AppRole, today: TodayDeskPayload, userId: string): TodayDeskPayload {
+function limitTodayForRole(role: AppRole, today: TodayDeskPayload, staffScopeId: string): TodayDeskPayload {
   if (role === "owner" || role === "manager" || role === "front-desk") return today;
 
   if (role === "housekeeping") {
-    const housekeepingTasks = today.housekeepingTasks.filter((task) => task.assigneeStaffId === userId);
+    const housekeepingTasks = today.housekeepingTasks.filter((task) => task.assigneeStaffId === staffScopeId);
     const assignedRoomIds = new Set(housekeepingTasks.map((task) => task.roomId));
     const rooms = today.rooms.filter((room) => assignedRoomIds.has(room.id));
     const arrivals = today.arrivals.filter((row) => assignedRoomIds.has(row.roomId)).map(maskReservationForHousekeeping);

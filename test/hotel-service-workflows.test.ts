@@ -349,6 +349,17 @@ const housekeeperSession: HostedSession = {
   role: "housekeeping",
 };
 
+const adminHousekeeperPreviewSession: HostedSession = {
+  userId: "admin-user",
+  displayName: "Admin",
+  organizationId: "org",
+  role: "housekeeping",
+  actualRole: "owner",
+  previewRole: "housekeeping",
+  previewStaffId: "staff-hk",
+  rolePreviewEnabled: true,
+};
+
 let mockDb: MockDatabase;
 
 mock.module("@/lib/authz", () => ({
@@ -490,6 +501,15 @@ describe("housekeeping workflow coverage", () => {
 
     await finishHousekeepingRoom(hotelA, housekeeperSession, roomA);
     expect(mockDb.housekeepingTasks(hotelA)[0].status).toBe("inspection");
+  });
+
+  test("admin housekeeper preview uses selected staff assignment", async () => {
+    mockDb.seedHousekeepingTask(hotelA, { id: "task-a", roomId: roomA, roomNumber: "101", title: "Clean room", status: "dirty", dueDate: "2026-06-01", notes: "", assigneeStaffId: "staff-hk" });
+
+    await startHousekeepingRoom(hotelA, adminHousekeeperPreviewSession, roomA);
+
+    expect(mockDb.housekeepingTasks(hotelA)[0].status).toBe("cleaning");
+    expect(mockDb.room(hotelA, roomA)?.status).toBe("cleaning");
   });
 
   test("unassigned housekeeper cannot access another room task", async () => {

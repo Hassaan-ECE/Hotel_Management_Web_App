@@ -1,10 +1,10 @@
 # Active Sprint
 
-Last updated: 2026-06-01
+Last updated: 2026-06-02
 
 ## Sprint Goal
 
-Stabilize the hosted app foundation before expanding product scope. Tenant isolation, input hardening, workflow guards, test foundation, hosted setup docs, clean-copy release-gate verification, deterministic font builds, pilot auth provisioning docs, hosted staging migration/seed validation, invite-only auth routing UX, hosted Clerk middleware/mobile sign-in hotfix, hosted hotel dashboard date/mobile-topbar fixes, mobile dashboard density/export placement polish, and admin/export naming polish are now in place.
+Stabilize the hosted app foundation before expanding product scope. Tenant isolation, input hardening, workflow guards, test foundation, hosted setup docs, clean-copy release-gate verification, deterministic font builds, pilot auth provisioning docs, hosted staging migration/seed validation, invite-only auth routing UX, hosted Clerk middleware/mobile sign-in hotfix, hosted hotel dashboard date/mobile-topbar fixes, mobile dashboard density/export placement polish, admin/export naming polish, and gated Admin role preview are now in place.
 
 ## Current Acceptance Criteria
 
@@ -22,6 +22,7 @@ Stabilize the hosted app foundation before expanding product scope. Tenant isola
 - Mobile topbar keeps brand, workspace navigation, and account controls on one compact row.
 - Metric cards are denser on phone widths, and manager export actions are moved out of the page title into a dedicated data exports panel.
 - The top-level `owner` permission is presented as Admin in the UI, and export downloads use hotel-specific filenames.
+- Admin role preview is feature-flagged, Clerk-user allow-listed, real Admin-only, scoped per hotel, and validates Housekeeper preview against active same-hotel staff.
 
 ## Next Implementation Packets
 
@@ -344,6 +345,31 @@ Acceptance criteria:
 - Done: Downloaded CSV/backup filenames include the hotel name.
 - Done: Add focused tests for sanitized hotel-specific filenames and response headers.
 - Done: Run test, typecheck, lint, build, and whitespace checks before deployment.
+
+### Packet 15 - Admin Role Preview
+
+Status: completed on 2026-06-02.
+
+Owner: manager implements and verifies.
+
+Likely files:
+
+- `src/lib/authz.ts`
+- `src/components/hotel-workspace.tsx`
+- `src/app/api/hotels/[hotelId]/role-preview/route.ts`
+- `src/app/hotels/[hotelId]/page.tsx`
+- `.env.example`
+- focused Packet 15 tests and PM docs.
+
+Acceptance criteria:
+
+- Done: Keep real database membership role as `owner`, presented as Admin.
+- Done: Add env gates `HOTEL_APP_ROLE_PREVIEW_ENABLED` and `HOTEL_APP_ROLE_PREVIEW_USER_IDS`, default off.
+- Done: Restrict preview controls and route handlers to real Admin users who are explicitly allow-listed.
+- Done: Store preview state in a short-lived HTTP-only cookie scoped by hotel id.
+- Done: Make `requireHotelSession` use the preview role as the effective server role while preserving `actualRole`.
+- Done: Validate Housekeeper preview against active same-hotel staff and use the selected staff id for assigned housekeeping work.
+- Done: Add focused schema, authz, route, UI, and service tests.
 
 ## Manager Review Focus
 

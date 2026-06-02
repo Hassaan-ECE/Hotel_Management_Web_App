@@ -2,11 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState, useTransition } from "react";
-import { ArrowRight, BedDouble, CheckCircle2, ClipboardCheck, Download, LogOut, Play, Plus, Save, Search, Wrench, XCircle } from "lucide-react";
+import { ArrowRight, BedDouble, CheckCircle2, ClipboardCheck, Download, LogOut, Play, Plus, Save, Search, UserCog, Wrench, XCircle } from "lucide-react";
 import { Money, StatusPill } from "@/components/format";
 import { hotelBackupFilename, hotelExportFilename } from "@/lib/downloads";
-import { roleLabels } from "@/lib/roles";
+import { appRoles, roleLabels } from "@/lib/roles";
 import type {
+  AppRole,
   AuditLogEntry,
   CountRow,
   HostedSession,
@@ -261,9 +262,47 @@ export function HotelWorkspace({
     );
   }
 
+  function updateRolePreview(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const previewRole = String(form.get("role") ?? "owner") as AppRole;
+    const staffId = previewRole === "housekeeping" ? String(form.get("staffId") ?? "") : null;
+    refreshWith(
+      () => {
+        if (previewRole === "owner") {
+          return request(`/api/hotels/${hotel.id}/role-preview`, { method: "DELETE" }).then(() => undefined);
+        }
+        return request(`/api/hotels/${hotel.id}/role-preview`, {
+          method: "POST",
+          body: JSON.stringify({ role: previewRole, staffId }),
+        }).then(() => undefined);
+      },
+      previewRole === "owner" ? "Role preview cleared." : `Previewing ${roleLabels[previewRole]}.`,
+    );
+  }
+
+  function clearRolePreview() {
+    refreshWith(
+      () => request(`/api/hotels/${hotel.id}/role-preview`, { method: "DELETE" }).then(() => undefined),
+      "Role preview cleared.",
+    );
+  }
+
+  const rolePreviewPanel = session.rolePreviewEnabled ? (
+    <RolePreviewPanel
+      key={`${session.role}-${session.previewStaffId ?? "none"}`}
+      session={session}
+      housekeepers={housekeepers}
+      pending={pending}
+      onSubmit={updateRolePreview}
+      onClear={clearRolePreview}
+    />
+  ) : null;
+
   if (role === "housekeeping") {
     return (
       <main className="housekeeping-main">
+        {rolePreviewPanel}
         <HousekeepingStaffWorkspace
           session={session}
           today={today}
@@ -286,6 +325,8 @@ export function HotelWorkspace({
           <p className="muted">Data shown here is scoped to this hotel and filtered for this role.</p>
         </div>
       </div>
+
+      {rolePreviewPanel}
 
       {message ? <p className={message.includes("failed") || message.includes("cannot") ? "error-text" : "notice"}>{message}</p> : null}
 
@@ -327,6 +368,78 @@ export function HotelWorkspace({
         <MaintenanceWorkspace today={today} pending={pending} onCreateMaintenance={createMaintenance} onUpdateMaintenance={updateMaintenanceTicket} />
       ) : null}
     </main>
+  );
+}
+
+function RolePreviewPanel({
+  session,
+  housekeepers,
+  pending,
+  onSubmit,
+  onClear,
+}: {
+  session: HostedSession;
+  housekeepers: StaffMember[];
+  pending: boolean;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onClear: () => void;
+}) {
+  const [selectedRole, setSelectedRole] = useState<AppRole>(session.previewRole ?? session.role);
+  const [selectedStaffId, setSelectedStaffId] = useState(session.previewStaffId ?? housekeepers[0]?.id ?? "");
+  const needsHousekeeper = selectedRole === "housekeeping";
+  const disableApply = pending || (needsHousekeeper && !selectedStaffId);
+
+  return (
+    <section className="panel role-preview-panel" aria-label="Admin role preview">
+      <div className="role-preview-heading">
+        <span className="icon-badge tone-green">
+          <UserCog size={18} />
+        </span>
+        <div>
+          <p className="eyebrow">Admin role preview</p>
+          <h2>Testing as {roleLabels[session.role]}</h2>
+        </div>
+      </div>
+      <form className="role-preview-form" onSubmit={onSubmit}>
+        <label>
+          Role
+          <select name="role" value={selectedRole} onChange={(event) => setSelectedRole(event.target.value as AppRole)}>
+            {appRoles.map((roleOption) => (
+              <option key={roleOption} value={roleOption}>
+                {roleLabels[roleOption]}
+              </option>
+            ))}
+          </select>
+        </label>
+        {needsHousekeeper ? (
+          <label>
+            Housekeeper
+            <select name="staffId" value={selectedStaffId} onChange={(event) => setSelectedStaffId(event.target.value)} required>
+              {housekeepers.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.fullName}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+        <button className="primary-button" type="submit" disabled={disableApply}>
+          <Save size={16} />
+          Apply
+        </button>
+        {session.previewRole ? (
+          <button className="secondary-button" type="button" disabled={pending} onClick={onClear}>
+            <XCircle size={16} />
+            Exit preview
+          </button>
+        ) : null}
+      </form>
+      <div className="role-preview-state">
+        <span>Real role: {roleLabels[session.actualRole ?? "owner"]}</span>
+        <span>Effective role: {roleLabels[session.role]}</span>
+        {session.previewStaffId ? <span>Staff: {housekeepers.find((member) => member.id === session.previewStaffId)?.fullName ?? session.previewStaffId}</span> : null}
+      </div>
+    </section>
   );
 }
 

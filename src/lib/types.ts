@@ -12,6 +12,10 @@ export interface HostedSession {
   organizationId: string;
   activeHotelId?: string;
   role: AppRole;
+  actualRole?: AppRole;
+  previewRole?: AppRole | null;
+  previewStaffId?: string | null;
+  rolePreviewEnabled?: boolean;
 }
 
 export interface Hotel {

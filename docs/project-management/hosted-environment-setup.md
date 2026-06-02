@@ -1,6 +1,6 @@
 # Hosted Environment Setup
 
-Last updated: 2026-06-01
+Last updated: 2026-06-02
 
 Use this as the operating playbook for local, staging, and production setup. It covers Clerk, Neon, environment modes, seeding, and Vercel deployment expectations without relying on chat history.
 
@@ -15,6 +15,8 @@ Set these values in `.env.local` (local) or Vercel Environment Variables (hosted
 - `NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL`: Post sign-in destination path.
 - `NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL`: Post sign-up destination path.
 - `HOTEL_APP_DEMO_MODE`: Environment switch for fallback behavior.
+- `HOTEL_APP_ROLE_PREVIEW_ENABLED`: Optional Admin-only hosted QA role preview switch; default `"false"`.
+- `HOTEL_APP_ROLE_PREVIEW_USER_IDS`: Optional comma or whitespace separated Clerk user id allow-list for role preview.
 - `SEED_CLERK_USER_ID`: Required for `bun run db:seed`.
 - `SEED_CLERK_ORGANIZATION_ID`: Optional organization mapping used by the seed command.
 
@@ -73,6 +75,13 @@ Production must be real-service mode:
 - Use dedicated Clerk + Neon production resources.
 - Seed only in controlled environments with approved owner IDs.
 - Run migration/seed validation in a maintenance window and verify ownership/tenant data before enabling user traffic.
+
+For one-account Admin role smoke testing, production may temporarily set:
+
+- `HOTEL_APP_ROLE_PREVIEW_ENABLED="true"`
+- `HOTEL_APP_ROLE_PREVIEW_USER_IDS="<approved Clerk Admin user id>"`
+
+Keep this restricted to real Admin users and remove or disable it when one-account role QA is no longer needed.
 
 ## Intentional demo-only preview behavior
 

@@ -1,6 +1,6 @@
 # Project Brief
 
-Last updated: 2026-06-01
+Last updated: 2026-06-02
 
 ## Product
 
@@ -46,6 +46,7 @@ Implemented or scaffolded workflows:
 - CSV exports for rooms, reservations, and maintenance.
 - JSON backup export.
 - Server-side role and hotel membership checks on API routes.
+- Gated Admin role preview for one-account hosted QA across staff roles.
 - Audit log inserts for key mutations.
 - Bun test suite covering focused tenant isolation, input validation, service workflows, and representative API authorization paths.
 - Strict workflow guards for reservation, housekeeping, and maintenance status transitions in production and demo mode.
@@ -58,6 +59,7 @@ Implemented or scaffolded workflows:
 - Payment exports exist in fixture data but are not stored in the database and are not yet a first-class app surface.
 - The automated test suite is still focused; broader role smoke coverage and future payment/revenue tests remain needed.
 - Production auth provisioning is documented for manual pilot operations, but there is no admin UI or dedicated provisioning script yet.
+- Admin role preview is a controlled QA tool, not a general production debug route; keep it disabled unless explicitly needed for one-account role testing.
 
 ## Shipping Definition
 

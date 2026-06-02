@@ -1,5 +1,7 @@
 import type { AppRole, StaffRole } from "@/lib/types";
 
+export const appRoles = ["owner", "manager", "front-desk", "housekeeping", "housekeeping-supervisor", "maintenance"] as const satisfies readonly AppRole[];
+
 export const roleLabels: Record<AppRole, string> = {
   owner: "Admin",
   manager: "Manager",

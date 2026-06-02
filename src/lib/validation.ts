@@ -1,6 +1,8 @@
 import { z } from "zod";
+import { appRoles } from "@/lib/roles";
 import type { MaintenanceStatus, ReservationStatus } from "@/lib/types";
 
+export const appRoleSchema = z.enum(appRoles);
 export const reservationStatusSchema = z.enum(["pending", "confirmed", "checked-in", "checked-out", "cancelled"]);
 export const roomStatusSchema = z.enum(["available", "occupied", "dirty", "cleaning", "maintenance", "ready"]);
 export const maintenancePrioritySchema = z.enum(["low", "medium", "high", "critical"]);
@@ -138,3 +140,18 @@ export const reviewRoomIssueSchema = z.object({
 export const cancelRoomIssueSchema = z.object({
   ticketId: z.string().trim().min(1),
 });
+
+export const rolePreviewInputSchema = z
+  .object({
+    role: appRoleSchema,
+    staffId: z.string().trim().min(1).optional().nullable(),
+  })
+  .superRefine((input, context) => {
+    if (input.role === "housekeeping" && !input.staffId) {
+      context.addIssue({
+        code: "custom",
+        message: "Choose a housekeeper for Housekeeper preview.",
+        path: ["staffId"],
+      });
+    }
+  });

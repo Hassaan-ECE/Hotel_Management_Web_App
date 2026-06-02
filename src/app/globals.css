@@ -399,6 +399,69 @@ svg {
   top: 84px;
 }
 
+.role-preview-panel {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.9fr) minmax(280px, 1.5fr);
+  align-items: center;
+  gap: 14px;
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+  background: color-mix(in srgb, var(--primary-soft) 56%, var(--panel));
+}
+
+.role-preview-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.role-preview-heading .eyebrow {
+  margin-bottom: 4px;
+}
+
+.role-preview-form {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) minmax(150px, 1fr) auto auto;
+  align-items: end;
+  gap: 10px;
+}
+
+.role-preview-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.role-preview-form select {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--panel) 86%, white);
+  color: var(--foreground);
+  padding: 8px 10px;
+  outline: none;
+}
+
+.role-preview-state {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.role-preview-state span {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--background) 72%, transparent);
+  color: var(--muted);
+  padding: 6px 8px;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
 .single-column {
   max-width: 1040px;
 }
@@ -1064,6 +1127,10 @@ button.primary:hover,
     grid-template-columns: 1fr;
   }
 
+  .role-preview-panel {
+    grid-template-columns: 1fr;
+  }
+
   .workspace-grid > aside {
     position: static;
   }
@@ -1156,9 +1223,15 @@ button.primary:hover,
   .hotel-grid,
   .result-grid,
   .form-grid,
+  .role-preview-form,
   .inline-form,
   .maintenance-ticket-form {
     grid-template-columns: 1fr;
+  }
+
+  .role-preview-form .primary-button,
+  .role-preview-form .secondary-button {
+    width: 100%;
   }
 
   .metric-grid {

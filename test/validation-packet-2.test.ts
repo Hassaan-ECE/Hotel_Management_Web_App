@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 
-import { housekeepingInputSchema, normalizeSearchLimit } from "@/lib/validation";
+import { housekeepingInputSchema, normalizeSearchLimit, rolePreviewInputSchema } from "@/lib/validation";
 
 type MockSql = {
   query<T = unknown>(queryText: string, params?: unknown[]): Promise<T>;
@@ -110,4 +110,20 @@ describe("housekeepingInputSchema", () => {
       expect(result.success).toBe(false);
     });
   }
+});
+
+describe("rolePreviewInputSchema", () => {
+  test("allows known preview roles", () => {
+    expect(rolePreviewInputSchema.safeParse({ role: "front-desk" }).success).toBe(true);
+    expect(rolePreviewInputSchema.safeParse({ role: "maintenance" }).success).toBe(true);
+  });
+
+  test("requires staff id for housekeeper preview", () => {
+    expect(rolePreviewInputSchema.safeParse({ role: "housekeeping" }).success).toBe(false);
+    expect(rolePreviewInputSchema.safeParse({ role: "housekeeping", staffId: "staff-hk" }).success).toBe(true);
+  });
+
+  test("rejects unknown preview roles", () => {
+    expect(rolePreviewInputSchema.safeParse({ role: "super-admin" }).success).toBe(false);
+  });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import type { ManagerDashboardPayload, TodayDeskPayload } from "@/lib/types";
+import type { HostedSession, ManagerDashboardPayload, TodayDeskPayload } from "@/lib/types";
 
 mock.module("next/navigation", () => ({
   useRouter: () => ({
@@ -52,26 +52,31 @@ const manager: ManagerDashboardPayload = {
   recentAudit: [],
 };
 
+const hotel = {
+  id: "hotel-1",
+  organizationId: "org-1",
+  name: "Packet Hotel",
+  city: "Dallas",
+  state: "TX",
+  timezone: "America/Chicago",
+  active: true,
+};
+
+const adminSession: HostedSession = {
+  userId: "owner-1",
+  displayName: "Owner",
+  organizationId: "org-1",
+  role: "owner",
+  actualRole: "owner",
+  activeHotelId: "hotel-1",
+};
+
 describe("packet 13 hotel workspace layout", () => {
   test("moves manager exports out of the page title into a dedicated panel", () => {
     const html = renderToStaticMarkup(
       <HotelWorkspace
-        hotel={{
-          id: "hotel-1",
-          organizationId: "org-1",
-          name: "Packet Hotel",
-          city: "Dallas",
-          state: "TX",
-          timezone: "America/Chicago",
-          active: true,
-        }}
-        session={{
-          userId: "owner-1",
-          displayName: "Owner",
-          organizationId: "org-1",
-          role: "owner",
-          activeHotelId: "hotel-1",
-        }}
+        hotel={hotel}
+        session={adminSession}
         today={today}
         manager={manager}
         housekeepers={[]}
@@ -88,5 +93,60 @@ describe("packet 13 hotel workspace layout", () => {
     expect(html.includes("Full hotel backup")).toBe(true);
     expect(pageTitleHtml.includes("Reservation list")).toBe(false);
     expect(pageTitleHtml.includes("Full hotel backup")).toBe(false);
+  });
+});
+
+describe("packet 15 admin role preview UI", () => {
+  test("shows role preview panel only for enabled admin session", () => {
+    const html = renderToStaticMarkup(
+      <HotelWorkspace
+        hotel={hotel}
+        session={{ ...adminSession, rolePreviewEnabled: true }}
+        today={today}
+        manager={manager}
+        housekeepers={[{ id: "staff-hk", fullName: "Ava Patel", role: "housekeeping", active: true }]}
+      />,
+    );
+
+    expect(html.includes("Admin role preview")).toBe(true);
+    expect(html.includes("Testing as Admin")).toBe(true);
+    expect(html.includes("Housekeeper")).toBe(true);
+    expect(html.includes("Real role: Admin")).toBe(true);
+
+    const staffHtml = renderToStaticMarkup(
+      <HotelWorkspace
+        hotel={hotel}
+        session={{ ...adminSession, role: "front-desk", actualRole: "front-desk", rolePreviewEnabled: false }}
+        today={today}
+        manager={null}
+        housekeepers={[]}
+      />,
+    );
+
+    expect(staffHtml.includes("Admin role preview")).toBe(false);
+  });
+
+  test("keeps exit controls visible while previewing housekeeper", () => {
+    const html = renderToStaticMarkup(
+      <HotelWorkspace
+        hotel={hotel}
+        session={{
+          ...adminSession,
+          role: "housekeeping",
+          actualRole: "owner",
+          previewRole: "housekeeping",
+          previewStaffId: "staff-hk",
+          rolePreviewEnabled: true,
+        }}
+        today={today}
+        manager={null}
+        housekeepers={[{ id: "staff-hk", fullName: "Ava Patel", role: "housekeeping", active: true }]}
+      />,
+    );
+
+    expect(html.includes("Admin role preview")).toBe(true);
+    expect(html.includes("Testing as Housekeeper")).toBe(true);
+    expect(html.includes("Exit preview")).toBe(true);
+    expect(html.includes("Staff: Ava Patel")).toBe(true);
   });
 });

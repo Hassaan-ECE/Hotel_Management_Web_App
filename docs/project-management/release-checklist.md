@@ -1,6 +1,6 @@
 # Release Checklist
 
-Last updated: 2026-06-01
+Last updated: 2026-06-02
 
 For a clean environment or copied worktree, start with the local demo setup from
 `README.md`:
@@ -62,6 +62,7 @@ Before a staging or production pilot:
 - Confirm non-owner operational users have active `staff` rows where needed.
 - Smoke owner portfolio access, one staff role login, wrong-hotel denial, and staff deactivation.
 - Confirm the deployed build includes Clerk middleware and does not flash between `/sign-in` and `/portfolio` after sign-in.
+- If Admin role preview is enabled, confirm `HOTEL_APP_ROLE_PREVIEW_USER_IDS` contains only approved Clerk Admin user ids and disable it after one-account role QA when no longer needed.
 
 ## Build Font Reliability
 
@@ -83,3 +84,4 @@ Before a hosted pilot, also smoke these role flows in demo mode or staging:
 - Production hotel workspace check: opening each hotel from portfolio does not show React object/date rendering errors, and the mobile topbar remains one compact row after sign-in.
 - Production mobile dashboard check: metric cards scan as compact two-column tiles, and export/download actions appear in `Data exports` instead of the page title.
 - Production export check: downloaded filenames include the hotel name, such as `pecos-motor-inn-reservations.csv`, so files from different hotels do not collide.
+- Production Admin role preview check, only when enabled: switch from Admin to Front desk, Housekeeping supervisor, Housekeeper with a selected staff member, and Maintenance; confirm manager-only exports are denied while previewing a staff role, then exit preview back to Admin.

@@ -1,6 +1,6 @@
 # Decision Log
 
-Last updated: 2026-06-01
+Last updated: 2026-06-02
 
 ## Decisions
 
@@ -87,6 +87,18 @@ Rationale:
 - The app currently treats `hotel_memberships` as the source of truth for hotel access and roles.
 - There is no admin UI or dedicated provisioning command yet.
 - A concrete runbook is safer than ad hoc SQL while staging resources and pilot access are still limited.
+
+### 2026-06-02 - Use Gated Admin Role Preview For One-Account QA
+
+Decision:
+
+Add a feature-flagged, Clerk-user allow-listed Admin role preview that changes the effective server role for the active hotel without changing persisted `hotel_memberships` rows.
+
+Rationale:
+
+- The user needs to smoke test manager, front desk, housekeeping supervisor, housekeeper, and maintenance flows from one Clerk account.
+- The app database remains the source of truth for hotel roles; Clerk public metadata is not used for hotel authorization.
+- A broad production debug role-switcher would be too risky, so preview is real Admin-only, default off, allow-listed, hotel-scoped, short-lived, and covered by tests.
 
 ## Open Questions
 
