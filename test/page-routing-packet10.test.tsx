@@ -202,6 +202,8 @@ describe("packet 10 page routing", () => {
     expect(redirectCalls.length).toBe(0);
     expect(rendered).toBeDefined();
     const html = renderToStaticMarkup(rendered);
+    expect(html.includes("auth-container")).toBe(true);
+    expect(html.includes("auth-panel")).toBe(true);
     expect(html.includes("Mock SignIn")).toBe(true);
     expect(signInProps?.routing).toBe("path");
     expect(signInProps?.path).toBe("/sign-in");

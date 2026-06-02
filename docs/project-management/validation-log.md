@@ -803,3 +803,43 @@ Notes:
 - `/portfolio` now shows a clear no-access state for signed-in users without active hotel memberships.
 - `bun run test` remains the official release-gate command; its package script now uses Bun isolation to prevent cross-file module mock leakage.
 - Manager acceptance review reran `bun run test`, `bun run typecheck`, `bun run lint`, and `bun run build` successfully after the Packet 10 handoff.
+
+## 2026-06-01 Packet 11 Hosted Clerk Middleware And Mobile Sign-In Hotfix
+
+Context:
+
+- Hosted production smoke testing on PC and iPhone 15 Pro Max showed flashing after sign-in and sign-in UI overflow on mobile.
+- Root-cause assessment: the app used Clerk server helpers through `getIdentity()` but did not include project middleware, so hosted server identity resolution could fail after client sign-in and create a `/sign-in` and `/portfolio` loop.
+- Added Clerk middleware and constrained the sign-in page/auth card for mobile widths.
+
+Checks run:
+
+```powershell
+bun run test
+```
+
+Result: passed. 72 tests passed across 7 files with 232 assertions.
+
+```powershell
+bun run typecheck
+```
+
+Result: passed.
+
+```powershell
+bun run lint
+```
+
+Result: passed.
+
+```powershell
+bun run build
+```
+
+Result: passed. Build output included `Proxy (Middleware)`, confirming the middleware is part of the Next/Vercel build.
+
+Notes:
+
+- Added `middleware.ts` with `clerkMiddleware()`.
+- Added `test/middleware-packet11.test.ts` and expanded page-routing coverage for responsive auth classes.
+- Mobile sign-in CSS now constrains Clerk root/card boxes to the panel width and prevents horizontal overflow.

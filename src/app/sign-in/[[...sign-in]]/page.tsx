@@ -22,8 +22,8 @@ export default async function SignInPage() {
   return (
     <div className="page-shell">
       <AppTopbar />
-      <main className="container">
-        <section className="panel stack" style={{ maxWidth: 520 }}>
+      <main className="container auth-container">
+        <section className="panel stack auth-panel">
           <p className="eyebrow">Staff invitation</p>
           <h1>Sign in</h1>
           <p className="muted">Only invited owner and staff accounts can access hotel workspaces.</p>

@@ -61,6 +61,7 @@ Before a staging or production pilot:
 - Confirm every pilot user has the intended active `hotel_memberships` rows.
 - Confirm non-owner operational users have active `staff` rows where needed.
 - Smoke owner portfolio access, one staff role login, wrong-hotel denial, and staff deactivation.
+- Confirm the deployed build includes Clerk middleware and does not flash between `/sign-in` and `/portfolio` after sign-in.
 
 ## Build Font Reliability
 
@@ -78,3 +79,4 @@ Before a hosted pilot, also smoke these role flows in demo mode or staging:
 - Maintenance ticket create, update, resolve, and cancel work.
 - CSV export and JSON backup routes return data for the active hotel only.
 - Vercel Preview on iPhone 15 Pro Max: sign-in redirects, no public sign-up surface, owner portfolio, staff hotel redirect, no-membership panel, and core pages fit without broken mobile layout.
+- Production iPhone 15 Pro Max auth check: sign-in page has no horizontal overflow, Clerk card stays inside the viewport, and post-sign-in navigation settles on the expected page.

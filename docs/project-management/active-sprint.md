@@ -4,7 +4,7 @@ Last updated: 2026-06-01
 
 ## Sprint Goal
 
-Stabilize the hosted app foundation before expanding product scope. Tenant isolation, input hardening, workflow guards, test foundation, hosted setup docs, clean-copy release-gate verification, deterministic font builds, pilot auth provisioning docs, hosted staging migration/seed validation, and invite-only auth routing UX are now in place.
+Stabilize the hosted app foundation before expanding product scope. Tenant isolation, input hardening, workflow guards, test foundation, hosted setup docs, clean-copy release-gate verification, deterministic font builds, pilot auth provisioning docs, hosted staging migration/seed validation, invite-only auth routing UX, and the hosted Clerk middleware/mobile sign-in hotfix are now in place.
 
 ## Current Acceptance Criteria
 
@@ -16,6 +16,8 @@ Stabilize the hosted app foundation before expanding product scope. Tenant isola
 - Any delegated implementation task has a bounded file ownership scope and a manager review pass.
 - Clean-clone setup and hosted migration/seed validation are complete before M2 schema work starts.
 - Signed-in real-Clerk users do not remain on `/sign-in`, and signed-in users without active hotel memberships see a clear no-access state.
+- Hosted Clerk sign-in can resolve server identity after sign-in without a `/sign-in` and `/portfolio` redirect loop.
+- The sign-in page fits iPhone 15 Pro Max width without horizontal overflow.
 
 ## Next Implementation Packets
 
@@ -248,6 +250,28 @@ Acceptance criteria:
 - Done: `/portfolio` for signed-in users with no memberships renders a clear no-access panel with `AppTopbar`.
 - Done: `/portfolio` preserves `requireAnyHotelSession` behavior for membershiped users.
 - Done: Added focused Bun page-routing tests covering signed-in/signed-out `/sign-in` and `/portfolio` membership/role states.
+
+### Packet 11 - Hosted Clerk Middleware And Mobile Sign-In Hotfix
+
+Status: completed on 2026-06-01.
+
+Owner: manager implements and verifies.
+
+Likely files:
+
+- `middleware.ts`
+- `src/app/sign-in/[[...sign-in]]/page.tsx`
+- `src/app/globals.css`
+- `test/middleware-packet11.test.ts`
+- `test/page-routing-packet10.test.tsx`
+
+Acceptance criteria:
+
+- Done: Add Clerk middleware so server-side `auth()` and `currentUser()` can resolve identities in hosted mode.
+- Done: Preserve invite-only sign-in and `/portfolio` redirect behavior.
+- Done: Constrain the Clerk sign-in card and auth panel so mobile widths do not overflow.
+- Done: Add regression coverage proving middleware is exported and sign-in uses responsive auth classes.
+- Done: Run test, typecheck, lint, build, and whitespace checks before deployment.
 
 ## Manager Review Focus
 

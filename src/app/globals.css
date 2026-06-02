@@ -41,6 +41,7 @@
 html,
 body {
   min-height: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -322,6 +323,27 @@ svg {
   width: min(1360px, 100%);
   margin: 0 auto;
   padding: 28px clamp(16px, 4vw, 42px) 56px;
+}
+
+.auth-container {
+  width: 100%;
+  display: grid;
+  place-items: start center;
+}
+
+.auth-panel {
+  width: min(520px, 100%);
+  min-width: 0;
+}
+
+.auth-panel :where(.cl-rootBox, .cl-cardBox, .cl-card) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.auth-panel :where(.cl-card) {
+  box-shadow: none;
 }
 
 .page-title {
@@ -1074,6 +1096,10 @@ button.primary:hover,
     padding-inline: 14px;
   }
 
+  .auth-container {
+    padding-inline: 12px;
+  }
+
   .metric-grid,
   .hotel-grid,
   .result-grid,
@@ -1139,6 +1165,14 @@ button.primary:hover,
 
   .login-panel {
     padding: 20px;
+  }
+
+  .auth-container {
+    padding: 16px 10px 40px;
+  }
+
+  .auth-panel {
+    padding: 16px;
   }
 
   .code-grid {
