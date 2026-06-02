@@ -465,6 +465,81 @@ Acceptance criteria:
 - Done: Update PM docs and release smoke checks.
 - Done: Run test, typecheck, lint, build, diff, and whitespace checks.
 
+### Packet 22 - Booking Board UX Fixes
+
+Status: completed on 2026-06-02.
+
+Owner: manager implements and verifies.
+
+Acceptance criteria:
+
+- Done: Keep Start/End labels inline with their date inputs and add spacing before Apply dates.
+- Done: Hide empty room rows by default, with a `Show empty rooms` option for full inventory review.
+- Done: Align reservation bars on the same grid row as their room labels.
+- Done: Compress date columns into the board width instead of relying on horizontal dragging.
+- Done: Reduce date labels on longer ranges while preserving accurate reservation spans.
+
+### Packet 23 - Reservation Detail Page
+
+Status: completed on 2026-06-02.
+
+Owner: manager implements and verifies.
+
+Acceptance criteria:
+
+- Done: Add `/hotels/[hotelId]/front-desk/reservations/[reservationId]`.
+- Done: Load the reservation through a hotel-scoped service function in production and demo mode.
+- Done: Link reservation table cells and booking-board bars to the detail page.
+- Done: Show guest, room, stay dates, status, source, rates, total, notes, and allowed actions.
+
+### Packet 24 - Checkout Confirmation
+
+Status: completed on 2026-06-02.
+
+Owner: manager implements and verifies.
+
+Acceptance criteria:
+
+- Done: Require a confirmation dialog before checking out an in-house reservation.
+- Done: State that checkout moves the room to dirty and creates housekeeping turnover work.
+- Done: Keep the existing guarded reservation status API as the only mutation path.
+
+### Packet 25 - Front Desk Readiness Intelligence
+
+Status: completed on 2026-06-02.
+
+Owner: manager implements and verifies.
+
+Acceptance criteria:
+
+- Done: Move room readiness under the main front-desk hub content instead of a right-side aside.
+- Done: Show quick operational sections for ready to sell, housekeeping, blocked/maintenance, and departures.
+- Done: Keep the section optimized for quick front-desk scanning on mobile and desktop.
+
+### Packet 26 - Availability Lens
+
+Status: completed on 2026-06-02.
+
+Owner: manager implements and verifies.
+
+Acceptance criteria:
+
+- Done: Add a room-type availability summary using the 14-day active-reservation window.
+- Done: Show ready-now count, tonight availability, and longest open run by room type.
+- Done: Keep calculations hotel-scoped through the existing front-desk reservation loader.
+
+### Packet 27 - QA, PM Records, And Release Readiness
+
+Status: completed on 2026-06-02.
+
+Owner: manager implements and verifies.
+
+Acceptance criteria:
+
+- Done: Extend front-desk tests for booking-board filtering, compressed labels, detail links, checkout confirmation, route loading, and availability summaries.
+- Done: Update PM docs and manual smoke checklist.
+- Done: Run focused tests, typecheck, lint, full tests, build, diff, and whitespace checks.
+
 ## Manager Review Focus
 
 - Do not broaden scope into room-state schema work during release-foundation cleanup.

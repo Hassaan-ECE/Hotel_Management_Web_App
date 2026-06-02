@@ -697,6 +697,13 @@ export function demoLoadFrontDeskReservations(hotelId: string, rangeStart: strin
   };
 }
 
+export function demoLoadReservationDetail(hotelId: string, reservationId: string): ReservationSummary {
+  demoGetHotel(hotelId);
+  const reservation = reservationsFor(hotelId).find((candidate) => candidate.id === reservationId);
+  if (!reservation) throw notFound("Reservation was not found for this demo hotel.");
+  return reservation;
+}
+
 export function demoLoadManagerDashboard(hotelId: string): ManagerDashboardPayload {
   const today = todayString();
   const reservations = reservationsFor(hotelId);

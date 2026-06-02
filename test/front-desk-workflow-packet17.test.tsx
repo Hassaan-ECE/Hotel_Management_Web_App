@@ -13,6 +13,7 @@ let identity: { userId: string; clerkOrganizationId: string | null; displayName:
 };
 let requireHotelSessionCalls: Array<{ hotelId: string; allowed: string[] }> = [];
 let loadFrontDeskReservationsCalls: Array<{ hotelId: string; rangeStart: string; rangeEnd: string }> = [];
+let loadReservationDetailCalls: Array<{ hotelId: string; reservationId: string }> = [];
 
 const hotel: Hotel = {
   id: "hotel-1",
@@ -27,6 +28,8 @@ const hotel: Hotel = {
 const rooms: Room[] = [
   { id: "room-101", number: "101", roomType: "King", floor: 1, capacity: 2, nightlyRateCents: 15900, status: "ready" },
   { id: "room-102", number: "102", roomType: "Double Queen", floor: 1, capacity: 4, nightlyRateCents: 17900, status: "occupied" },
+  { id: "room-103", number: "103", roomType: "King", floor: 1, capacity: 2, nightlyRateCents: 15900, status: "ready" },
+  { id: "room-104", number: "104", roomType: "Suite", floor: 1, capacity: 4, nightlyRateCents: 22900, status: "maintenance" },
 ];
 
 const todayPayload: TodayDeskPayload = {
@@ -37,7 +40,7 @@ const todayPayload: TodayDeskPayload = {
     inHouse: 1,
     pendingRequests: 0,
     openMaintenance: 0,
-    roomsReady: 1,
+    roomsReady: 2,
     roomsDirty: 0,
   },
   rooms,
@@ -150,6 +153,10 @@ mock.module("@/lib/hotel-service", () => ({
     return { ...reservationsPayload, rangeStart, rangeEnd };
   },
   loadHousekeepingSupervisor: async () => ({ housekeepers: [] }),
+  loadReservationDetail: async (hotelId: string, reservationId: string) => {
+    loadReservationDetailCalls.push({ hotelId, reservationId });
+    return reservationsPayload.reservations.find((reservation) => reservation.id === reservationId) ?? reservationsPayload.reservations[0];
+  },
   loadTodayDesk: async () => todayPayload,
   todayString: () => "2026-06-01",
 }));
@@ -158,6 +165,7 @@ const frontDeskComponents = await import("@/components/front-desk-workspace");
 const FrontDeskPage = (await import("@/app/hotels/[hotelId]/front-desk/page")).default;
 const WalkInPage = (await import("@/app/hotels/[hotelId]/front-desk/walk-in/page")).default;
 const ReservationsPage = (await import("@/app/hotels/[hotelId]/front-desk/reservations/page")).default;
+const ReservationDetailPage = (await import("@/app/hotels/[hotelId]/front-desk/reservations/[reservationId]/page")).default;
 
 beforeEach(() => {
   redirectCalls = [];
@@ -170,6 +178,7 @@ beforeEach(() => {
   };
   requireHotelSessionCalls = [];
   loadFrontDeskReservationsCalls = [];
+  loadReservationDetailCalls = [];
 });
 
 describe("packet 17 front-desk components", () => {
@@ -179,7 +188,8 @@ describe("packet 17 front-desk components", () => {
     expect(html.includes("Guest, room, or reservation search")).toBe(true);
     expect(html.includes("Create walk-in")).toBe(true);
     expect(html.includes("Arrivals / in-house")).toBe(true);
-    expect(html.includes("Room readiness")).toBe(true);
+    expect(html.includes("Room readiness and availability")).toBe(true);
+    expect(html.includes("Sellable by room type")).toBe(true);
     expect(html.includes("Guest record")).toBe(false);
   });
 
@@ -208,6 +218,40 @@ describe("packet 17 front-desk components", () => {
     ]);
   });
 
+  test("booking board hides empty rooms by default and links bars to reservation details", () => {
+    expect(frontDeskComponents.roomsForBookingBoard(rooms, reservationsPayload.reservations, false).map((room) => room.id)).toEqual(["room-101", "room-102"]);
+    expect(frontDeskComponents.roomsForBookingBoard(rooms, reservationsPayload.reservations, true).map((room) => room.id)).toEqual(["room-101", "room-102", "room-103", "room-104"]);
+
+    const html = renderToStaticMarkup(
+      <frontDeskComponents.BookingBoard
+        hotelId="hotel-1"
+        hotelName="Packet Hotel"
+        rooms={rooms}
+        reservations={reservationsPayload.reservations}
+        rangeStart="2026-06-01"
+        rangeEnd="2026-06-04"
+      />,
+    );
+
+    expect(html.includes("Room 103")).toBe(false);
+    expect(html.includes("/hotels/hotel-1/front-desk/reservations/res-1")).toBe(true);
+  });
+
+  test("booking board compresses date labels for longer ranges", () => {
+    expect(frontDeskComponents.bookingDateLabelStep(8)).toBe(1);
+    expect(frontDeskComponents.bookingDateLabelStep(14)).toBe(2);
+    expect(frontDeskComponents.bookingDateLabelStep(30)).toBe(4);
+  });
+
+  test("availability summary answers sellable room type questions", () => {
+    const summary = frontDeskComponents.summarizeRoomTypeAvailability(reservationsPayload);
+    const king = summary.find((row) => row.roomType === "King");
+
+    expect(king?.readyNow).toBe(2);
+    expect(king?.availableTonight).toBe(1);
+    expect(king?.longestOpenNights).toBe(14);
+  });
+
   test("reservations component renders table and booking-board toggle", () => {
     const html = renderToStaticMarkup(<frontDeskComponents.FrontDeskReservationsPage hotelId="hotel-1" hotelName="Packet Hotel" payload={reservationsPayload} />);
 
@@ -215,6 +259,29 @@ describe("packet 17 front-desk components", () => {
     expect(html.includes("Booking board")).toBe(true);
     expect(html.includes("Jamie Morgan")).toBe(true);
     expect(html.includes("Taylor Brooks")).toBe(true);
+    expect(html.includes("/hotels/hotel-1/front-desk/reservations/res-1")).toBe(true);
+  });
+
+  test("checkout confirmation states the room consequence before status update", () => {
+    const html = renderToStaticMarkup(
+      <frontDeskComponents.CheckoutConfirmDialog
+        reservation={reservationsPayload.reservations[1]}
+        pending={false}
+        onCancel={() => undefined}
+        onConfirm={() => undefined}
+      />,
+    );
+
+    expect(html.includes("Confirm checkout")).toBe(true);
+    expect(html.includes("Room 101 will move to dirty")).toBe(true);
+  });
+
+  test("reservation detail component exposes detail fields and guarded actions", () => {
+    const html = renderToStaticMarkup(<frontDeskComponents.ReservationDetailView hotelId="hotel-1" reservation={reservationsPayload.reservations[1]} />);
+
+    expect(html.includes("Jamie Morgan - Room 101")).toBe(true);
+    expect(html.includes("Reservation ID")).toBe(true);
+    expect(html.includes("Check out")).toBe(true);
   });
 });
 
@@ -226,6 +293,7 @@ describe("packet 17 front-desk pages", () => {
     expect(html.includes("APP_TOPBAR")).toBe(true);
     expect(html.includes("Front desk")).toBe(true);
     expect(requireHotelSessionCalls[0]).toEqual({ hotelId: "hotel-1", allowed: ["owner", "manager", "front-desk"] });
+    expect(loadFrontDeskReservationsCalls[0]).toEqual({ hotelId: "hotel-1", rangeStart: "2026-06-01", rangeEnd: "2026-06-15" });
   });
 
   test("walk-in page renders the separate walk-in route", async () => {
@@ -251,5 +319,15 @@ describe("packet 17 front-desk pages", () => {
     expect(html.includes("Arrivals / in-house")).toBe(true);
     expect(loadFrontDeskReservationsCalls[0]).toEqual({ hotelId: "hotel-1", rangeStart: "2026-07-01", rangeEnd: "2026-07-20" });
     expect(requireHotelSessionCalls.at(-1)).toEqual({ hotelId: "hotel-1", allowed: ["owner", "manager", "front-desk"] });
+  });
+
+  test("reservation detail page loads a hotel-scoped reservation", async () => {
+    const rendered = await ReservationDetailPage({ params: Promise.resolve({ hotelId: "hotel-1", reservationId: "res-1" }) });
+    const html = renderToStaticMarkup(rendered);
+
+    expect(html.includes("Reservation detail")).toBe(true);
+    expect(html.includes("Jamie Morgan - Room 101")).toBe(true);
+    expect(loadReservationDetailCalls[0]).toEqual({ hotelId: "hotel-1", reservationId: "res-1" });
+    expect(requireHotelSessionCalls[0]).toEqual({ hotelId: "hotel-1", allowed: ["owner", "manager", "front-desk"] });
   });
 });

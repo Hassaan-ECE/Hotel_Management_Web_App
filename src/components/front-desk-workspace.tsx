@@ -3,15 +3,33 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { ArrowRight, CalendarDays, Plus, Save, Search } from "lucide-react";
+import { AlertTriangle, ArrowRight, BedDouble, CalendarDays, ClipboardCheck, Clock, Plus, Save, Search, Wrench } from "lucide-react";
 import { Money, StatusPill } from "@/components/format";
-import type { FrontDeskReservationsPayload, ReservationStatus, ReservationSummary, Room, SearchResults, TodayDeskPayload } from "@/lib/types";
+import type {
+  FrontDeskReservationsPayload,
+  ReservationStatus,
+  ReservationSummary,
+  Room,
+  RoomTypeAvailability,
+  SearchResults,
+  TodayDeskPayload,
+} from "@/lib/types";
 
 const activeStatuses: ReservationStatus[] = ["pending", "confirmed", "checked-in"];
 
 type SortKey = "guest" | "room" | "checkIn" | "checkOut" | "status";
 
-export function FrontDeskHub({ hotelId, hotelName, today }: { hotelId: string; hotelName: string; today: TodayDeskPayload }) {
+export function FrontDeskHub({
+  hotelId,
+  hotelName,
+  today,
+  availability,
+}: {
+  hotelId: string;
+  hotelName: string;
+  today: TodayDeskPayload;
+  availability?: FrontDeskReservationsPayload;
+}) {
   return (
     <>
       <section className="grid metric-grid">
@@ -23,41 +41,34 @@ export function FrontDeskHub({ hotelId, hotelName, today }: { hotelId: string; h
         <Metric label="Open maintenance" value={String(today.stats.openMaintenance)} />
       </section>
 
-      <div className="workspace-grid">
-        <section className="stack">
-          <Panel title="Guest, room, or reservation search">
-            <InstantFrontDeskSearch hotelId={hotelId} />
-          </Panel>
-          <div className="front-desk-actions">
-            <Link className="front-desk-action-card" href={`/hotels/${hotelId}/front-desk/walk-in`}>
-              <span className="icon-badge">
-                <Plus size={18} />
-              </span>
-              <div>
-                <h2>Create walk-in</h2>
-                <p>New guest and reservation in one flow.</p>
-              </div>
-              <ArrowRight size={18} />
-            </Link>
-            <Link className="front-desk-action-card" href={`/hotels/${hotelId}/front-desk/reservations`}>
-              <span className="icon-badge tone-green">
-                <CalendarDays size={18} />
-              </span>
-              <div>
-                <h2>Arrivals / in-house</h2>
-                <p>Table and booking board for active stays.</p>
-              </div>
-              <ArrowRight size={18} />
-            </Link>
-          </div>
-        </section>
-        <aside className="stack">
-          <Panel title="Room readiness">
-            <p className="muted">{hotelName}</p>
-            <RoomList rows={today.rooms} compact />
-          </Panel>
-        </aside>
-      </div>
+      <section className="stack">
+        <Panel title="Guest, room, or reservation search">
+          <InstantFrontDeskSearch hotelId={hotelId} />
+        </Panel>
+        <div className="front-desk-actions">
+          <Link className="front-desk-action-card" href={`/hotels/${hotelId}/front-desk/walk-in`}>
+            <span className="icon-badge">
+              <Plus size={18} />
+            </span>
+            <div>
+              <h2>Create walk-in</h2>
+              <p>New guest and reservation in one flow.</p>
+            </div>
+            <ArrowRight size={18} />
+          </Link>
+          <Link className="front-desk-action-card" href={`/hotels/${hotelId}/front-desk/reservations`}>
+            <span className="icon-badge tone-green">
+              <CalendarDays size={18} />
+            </span>
+            <div>
+              <h2>Arrivals / in-house</h2>
+              <p>Table and booking board for active stays.</p>
+            </div>
+            <ArrowRight size={18} />
+          </Link>
+        </div>
+        <FrontDeskReadiness hotelName={hotelName} today={today} availability={availability} />
+      </section>
     </>
   );
 }
@@ -150,6 +161,8 @@ export function FrontDeskReservationsPage({
   const [sortKey, setSortKey] = useState<SortKey>("checkIn");
   const [rangeStart, setRangeStart] = useState(payload.rangeStart);
   const [rangeEnd, setRangeEnd] = useState(payload.rangeEnd);
+  const [showAllRooms, setShowAllRooms] = useState(false);
+  const [checkoutTarget, setCheckoutTarget] = useState<ReservationSummary | null>(null);
   const [message, setMessage] = useState("");
   const [pending, startTransition] = useTransition();
 
@@ -178,10 +191,19 @@ export function FrontDeskReservationsPage({
             throw new Error(data?.error ?? "Reservation update failed.");
           }
           setMessage("Reservation status updated.");
+          setCheckoutTarget(null);
           router.refresh();
         })
         .catch((error) => setMessage(error instanceof Error ? error.message : String(error)));
     });
+  }
+
+  function requestStatus(row: ReservationSummary, nextStatus: ReservationStatus) {
+    if (nextStatus === "checked-out") {
+      setCheckoutTarget(row);
+      return;
+    }
+    updateStatus(row.id, nextStatus);
   }
 
   return (
@@ -196,12 +218,12 @@ export function FrontDeskReservationsPage({
           </button>
         </div>
         <form className="date-range-form" onSubmit={applyRange}>
-          <label>
-            Start
+          <label className="date-inline-label">
+            <span>Start</span>
             <input type="date" value={rangeStart} onChange={(event) => setRangeStart(event.target.value)} required />
           </label>
-          <label>
-            End
+          <label className="date-inline-label">
+            <span>End</span>
             <input type="date" value={rangeEnd} onChange={(event) => setRangeEnd(event.target.value)} required />
           </label>
           <button className="secondary-button" type="submit">
@@ -210,7 +232,7 @@ export function FrontDeskReservationsPage({
         </form>
       </div>
 
-      {message ? <p className={message.includes("failed") || message.includes("cannot") ? "error-text" : "notice"}>{message}</p> : null}
+      {message ? <p className={statusMessageClassName(message)}>{message}</p> : null}
 
       <Panel title="Active reservations">
         <div className="reservation-controls">
@@ -241,11 +263,36 @@ export function FrontDeskReservationsPage({
           </label>
         </div>
         {view === "table" ? (
-          <ReservationTable rows={rows} pending={pending} onStatus={updateStatus} />
+          <ReservationTable hotelId={hotelId} rows={rows} pending={pending} onStatus={requestStatus} />
         ) : (
-          <BookingBoard hotelName={hotelName} rooms={payload.rooms} reservations={rows} rangeStart={payload.rangeStart} rangeEnd={payload.rangeEnd} />
+          <>
+            <div className="board-options">
+              <label>
+                <input type="checkbox" checked={showAllRooms} onChange={(event) => setShowAllRooms(event.target.checked)} />
+                Show empty rooms
+              </label>
+              <span className="muted">{showAllRooms ? "All rooms visible" : "Booked rooms only"}</span>
+            </div>
+            <BookingBoard
+              hotelId={hotelId}
+              hotelName={hotelName}
+              rooms={payload.rooms}
+              reservations={rows}
+              rangeStart={payload.rangeStart}
+              rangeEnd={payload.rangeEnd}
+              showAllRooms={showAllRooms}
+            />
+          </>
         )}
       </Panel>
+      <CheckoutConfirmDialog
+        reservation={checkoutTarget}
+        pending={pending}
+        onCancel={() => setCheckoutTarget(null)}
+        onConfirm={() => {
+          if (checkoutTarget) updateStatus(checkoutTarget.id, "checked-out");
+        }}
+      />
     </section>
   );
 }
@@ -435,12 +482,14 @@ function SearchResultsView({ results }: { results: SearchResults | null }) {
 }
 
 function ReservationTable({
+  hotelId,
   rows,
   onStatus,
   pending,
 }: {
+  hotelId: string;
   rows: ReservationSummary[];
-  onStatus: (id: string, status: ReservationStatus) => void;
+  onStatus: (row: ReservationSummary, status: ReservationStatus) => void;
   pending: boolean;
 }) {
   if (rows.length === 0) return <EmptyState message="No active reservations in this range." />;
@@ -460,36 +509,46 @@ function ReservationTable({
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.id}>
+            <tr className="clickable-reservation-row" key={row.id}>
               <td>
-                <strong>{row.guestName}</strong>
-                <br />
-                <span className="muted">{row.guestPhone}</span>
+                <ReservationCellLink hotelId={hotelId} reservationId={row.id}>
+                  <strong>{row.guestName}</strong>
+                  <br />
+                  <span className="muted">{row.guestPhone}</span>
+                </ReservationCellLink>
               </td>
               <td>
-                Room {row.roomNumber}
-                <br />
-                <span className="muted">{row.roomType}</span>
+                <ReservationCellLink hotelId={hotelId} reservationId={row.id}>
+                  Room {row.roomNumber}
+                  <br />
+                  <span className="muted">{row.roomType}</span>
+                </ReservationCellLink>
               </td>
               <td>
-                {row.checkIn}
-                <br />
-                <span className="muted">to {row.checkOut}</span>
+                <ReservationCellLink hotelId={hotelId} reservationId={row.id}>
+                  {row.checkIn}
+                  <br />
+                  <span className="muted">to {row.checkOut}</span>
+                </ReservationCellLink>
               </td>
               <td>
-                <Money cents={row.totalCents} />
+                <ReservationCellLink hotelId={hotelId} reservationId={row.id}>
+                  <Money cents={row.totalCents} />
+                </ReservationCellLink>
               </td>
               <td>
-                <StatusPill value={row.status} />
+                <ReservationCellLink hotelId={hotelId} reservationId={row.id}>
+                  <StatusPill value={row.status} />
+                </ReservationCellLink>
               </td>
               <td className="actions">
                 {row.status !== "checked-in" ? (
-                  <button type="button" disabled={pending} onClick={() => onStatus(row.id, "checked-in")}>
+                  <button type="button" disabled={pending} onClick={() => onStatus(row, "checked-in")}>
                     Check in
                   </button>
                 ) : null}
                 {row.status === "checked-in" ? (
-                  <button type="button" disabled={pending} onClick={() => onStatus(row.id, "checked-out")}>
+                  <button type="button" disabled={pending} onClick={() => onStatus(row, "checked-out")}>
                     Check out
                   </button>
                 ) : null}
@@ -502,35 +561,51 @@ function ReservationTable({
   );
 }
 
-function BookingBoard({
+function ReservationCellLink({ hotelId, reservationId, children }: { hotelId: string; reservationId: string; children: React.ReactNode }) {
+  return (
+    <Link className="reservation-cell-link" href={reservationHref(hotelId, reservationId)}>
+      {children}
+    </Link>
+  );
+}
+
+export function BookingBoard({
+  hotelId,
   hotelName,
   rooms,
   reservations,
   rangeStart,
   rangeEnd,
+  showAllRooms = false,
 }: {
+  hotelId: string;
   hotelName: string;
   rooms: Room[];
   reservations: ReservationSummary[];
   rangeStart: string;
   rangeEnd: string;
+  showAllRooms?: boolean;
 }) {
   const dates = buildBookingBoardDates(rangeStart, rangeEnd);
   if (dates.length === 0) return <EmptyState message="Choose a valid date range." />;
 
-  const gridTemplateColumns = `110px repeat(${dates.length}, minmax(88px, 1fr))`;
+  const visibleRooms = roomsForBookingBoard(rooms, reservations, showAllRooms);
+  if (visibleRooms.length === 0) return <EmptyState message="No booked rooms in this range." />;
+
+  const gridTemplateColumns = `minmax(82px, 104px) repeat(${dates.length}, minmax(0, 1fr))`;
+  const labelStep = bookingDateLabelStep(dates.length);
 
   return (
     <div className="booking-board" aria-label={`${hotelName} booking board`}>
       <div className="booking-board-header" style={{ gridTemplateColumns }}>
         <div className="booking-room-header">Room</div>
-        {dates.map((date) => (
-          <div className="booking-date-header" key={date}>
-            {date.slice(5)}
+        {dates.map((date, index) => (
+          <div className="booking-date-header" key={date} title={date}>
+            {index % labelStep === 0 || index === dates.length - 1 ? date.slice(5) : ""}
           </div>
         ))}
       </div>
-      {rooms.map((room) => {
+      {visibleRooms.map((room) => {
         const roomReservations = reservations.filter((reservation) => reservation.roomId === room.id);
         return (
           <div className="booking-board-row" style={{ gridTemplateColumns }} key={room.id}>
@@ -546,20 +621,253 @@ function BookingBoard({
               const endIndex = Math.min(dates.length, daysBetween(rangeStart, reservation.checkOut));
               if (endIndex <= startIndex) return null;
               return (
-                <div
+                <Link
                   className={`booking-bar status-${reservation.status}`}
+                  href={reservationHref(hotelId, reservation.id)}
                   key={reservation.id}
-                  style={{ gridColumn: `${startIndex + 2} / ${endIndex + 2}` }}
+                  style={{ gridColumn: `${startIndex + 2} / ${endIndex + 2}`, gridRow: 1 }}
                   title={`${reservation.guestName}, room ${reservation.roomNumber}, ${reservation.checkIn} to ${reservation.checkOut}`}
+                  aria-label={`Open reservation for ${reservation.guestName} in room ${reservation.roomNumber}`}
                 >
                   <strong>{reservation.guestName}</strong>
                   <span>{reservation.checkIn} - {reservation.checkOut}</span>
-                </div>
+                </Link>
               );
             })}
           </div>
         );
       })}
+    </div>
+  );
+}
+
+export function ReservationDetailView({ hotelId, reservation }: { hotelId: string; reservation: ReservationSummary }) {
+  const router = useRouter();
+  const [message, setMessage] = useState("");
+  const [checkoutTarget, setCheckoutTarget] = useState<ReservationSummary | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function updateStatus(nextStatus: ReservationStatus) {
+    setMessage("");
+    startTransition(() => {
+      void fetch(`/api/hotels/${hotelId}/reservations/${reservation.id}/status`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      })
+        .then(async (response) => {
+          if (!response.ok) {
+            const data = (await response.json().catch(() => null)) as { error?: string } | null;
+            throw new Error(data?.error ?? "Reservation update failed.");
+          }
+          setMessage("Reservation status updated.");
+          setCheckoutTarget(null);
+          router.refresh();
+        })
+        .catch((error) => setMessage(error instanceof Error ? error.message : String(error)));
+    });
+  }
+
+  const canCheckIn = reservation.status === "pending" || reservation.status === "confirmed";
+  const canCheckOut = reservation.status === "checked-in";
+
+  return (
+    <section className="stack">
+      {message ? <p className={statusMessageClassName(message)}>{message}</p> : null}
+      <Panel title={`${reservation.guestName} - Room ${reservation.roomNumber}`}>
+        <div className="reservation-detail-grid">
+          <DetailItem label="Status" value={<StatusPill value={reservation.status} />} />
+          <DetailItem label="Reservation ID" value={reservation.id} />
+          <DetailItem label="Guest phone" value={reservation.guestPhone || "Not provided"} />
+          <DetailItem label="Room type" value={reservation.roomType} />
+          <DetailItem label="Check in" value={reservation.checkIn} />
+          <DetailItem label="Check out" value={reservation.checkOut} />
+          <DetailItem label="Guests" value={`${reservation.adults} adult${reservation.adults === 1 ? "" : "s"}, ${reservation.children} child${reservation.children === 1 ? "" : "ren"}`} />
+          <DetailItem label="Source" value={reservation.source} />
+          <DetailItem label="Nightly rate" value={<Money cents={reservation.nightlyRateCents} />} />
+          <DetailItem label="Total" value={<Money cents={reservation.totalCents} />} />
+        </div>
+        {reservation.notes ? (
+          <div className="reservation-notes">
+            <strong>Notes</strong>
+            <p>{reservation.notes}</p>
+          </div>
+        ) : null}
+        <div className="actions reservation-detail-actions">
+          {canCheckIn ? (
+            <button type="button" className="primary-button" disabled={pending} onClick={() => updateStatus("checked-in")}>
+              Check in
+            </button>
+          ) : null}
+          {canCheckOut ? (
+            <button type="button" className="danger-button" disabled={pending} onClick={() => setCheckoutTarget(reservation)}>
+              Check out
+            </button>
+          ) : null}
+          <Link className="button" href={`/hotels/${hotelId}/front-desk/reservations`}>
+            Back to reservations
+          </Link>
+        </div>
+      </Panel>
+      <CheckoutConfirmDialog
+        reservation={checkoutTarget}
+        pending={pending}
+        onCancel={() => setCheckoutTarget(null)}
+        onConfirm={() => updateStatus("checked-out")}
+      />
+    </section>
+  );
+}
+
+export function CheckoutConfirmDialog({
+  reservation,
+  pending,
+  onCancel,
+  onConfirm,
+}: {
+  reservation: ReservationSummary | null;
+  pending: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  if (!reservation) return null;
+
+  return (
+    <div className="modal-backdrop" role="presentation">
+      <section className="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="checkout-confirm-title">
+        <div className="stack">
+          <div>
+            <p className="eyebrow">Confirm checkout</p>
+            <h2 id="checkout-confirm-title">Check out {reservation.guestName}?</h2>
+            <p className="muted">
+              Room {reservation.roomNumber} will move to dirty and a checkout turnover task will be created for housekeeping.
+            </p>
+          </div>
+          <div className="actions">
+            <button type="button" className="secondary-button" disabled={pending} onClick={onCancel}>
+              Cancel
+            </button>
+            <button type="button" className="danger-button" disabled={pending} onClick={onConfirm}>
+              Confirm checkout
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function FrontDeskReadiness({
+  hotelName,
+  today,
+  availability,
+}: {
+  hotelName: string;
+  today: TodayDeskPayload;
+  availability?: FrontDeskReservationsPayload;
+}) {
+  const payload =
+    availability ??
+    ({
+      today: today.today,
+      rangeStart: today.today,
+      rangeEnd: dateFromOffset(today.today, 2),
+      rooms: today.rooms,
+      reservations: [...today.arrivals, ...today.inHouse],
+    } satisfies FrontDeskReservationsPayload);
+  const roomTypeRows = summarizeRoomTypeAvailability(payload);
+  const readyRooms = today.rooms.filter((room) => room.status === "ready" || room.status === "available");
+  const housekeepingRooms = today.rooms.filter((room) => room.status === "dirty" || room.status === "cleaning");
+  const blockedRooms = today.rooms.filter((room) => room.status === "maintenance");
+  const pendingDepartures = today.departures.slice(0, 5);
+
+  return (
+    <Panel title="Room readiness and availability">
+      <div className="readiness-heading">
+        <div>
+          <p className="muted">{hotelName}</p>
+          <p>Fast answers for walk-ins, calls, and guests waiting at the desk.</p>
+        </div>
+      </div>
+      <div className="readiness-snapshot">
+        <ReadinessCard icon={<BedDouble size={18} />} label="Ready to sell" value={String(readyRooms.length)} tone="good" />
+        <ReadinessCard icon={<ClipboardCheck size={18} />} label="Needs housekeeping" value={String(housekeepingRooms.length)} tone="warn" />
+        <ReadinessCard icon={<Wrench size={18} />} label="Blocked / maintenance" value={String(blockedRooms.length)} tone="danger" />
+        <ReadinessCard icon={<Clock size={18} />} label="Checking out soon" value={String(today.departures.length)} tone="neutral" />
+      </div>
+
+      <div className="availability-grid">
+        <section className="availability-panel">
+          <div className="section-heading">
+            <h3>Sellable by room type</h3>
+            <span className="muted">{payload.rangeStart} to {payload.rangeEnd}</span>
+          </div>
+          <div className="availability-table" role="table" aria-label="Room type availability">
+            <div className="availability-row header" role="row">
+              <span>Type</span>
+              <span>Ready</span>
+              <span>Tonight</span>
+              <span>Longest open</span>
+            </div>
+            {roomTypeRows.map((row) => (
+              <div className="availability-row" role="row" key={row.roomType}>
+                <strong>{row.roomType}</strong>
+                <span>{row.readyNow}</span>
+                <span>{row.availableTonight}</span>
+                <span>{row.longestOpenNights} night{row.longestOpenNights === 1 ? "" : "s"}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="availability-panel">
+          <div className="section-heading">
+            <h3>Operational focus</h3>
+            <span className="muted">Today</span>
+          </div>
+          <div className="front-desk-focus-list">
+            <FocusLine icon={<BedDouble size={16} />} label="Ready now" value={roomLabelList(readyRooms)} />
+            <FocusLine icon={<ClipboardCheck size={16} />} label="Housekeeping" value={roomLabelList(housekeepingRooms)} />
+            <FocusLine icon={<AlertTriangle size={16} />} label="Blocked" value={roomLabelList(blockedRooms)} />
+            <FocusLine
+              icon={<Clock size={16} />}
+              label="Departures"
+              value={pendingDepartures.length > 0 ? pendingDepartures.map((row) => `Room ${row.roomNumber}`).join(", ") : "No checked-in departures due today"}
+            />
+          </div>
+        </section>
+      </div>
+    </Panel>
+  );
+}
+
+function ReadinessCard({ icon, label, value, tone }: { icon: React.ReactNode; label: string; value: string; tone: "good" | "warn" | "danger" | "neutral" }) {
+  return (
+    <article className={`readiness-card tone-${tone}`}>
+      <span>{icon}</span>
+      <div>
+        <strong>{value}</strong>
+        <p>{label}</p>
+      </div>
+    </article>
+  );
+}
+
+function FocusLine({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="focus-line">
+      <span>{icon}</span>
+      <strong>{label}</strong>
+      <p>{value}</p>
+    </div>
+  );
+}
+
+function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="detail-item">
+      <span>{label}</span>
+      <strong>{value}</strong>
     </div>
   );
 }
@@ -602,6 +910,84 @@ function RoomList({ rows, compact = false }: { rows: Room[]; compact?: boolean }
       ))}
     </div>
   );
+}
+
+function reservationHref(hotelId: string, reservationId: string) {
+  return `/hotels/${hotelId}/front-desk/reservations/${reservationId}`;
+}
+
+function statusMessageClassName(message: string) {
+  const normalized = message.toLowerCase();
+  return normalized.includes("failed") || normalized.includes("cannot") ? "error-text" : "notice";
+}
+
+export function roomsForBookingBoard(rooms: Room[], reservations: ReservationSummary[], showAllRooms: boolean) {
+  if (showAllRooms) return rooms;
+  const bookedRoomIds = new Set(reservations.map((reservation) => reservation.roomId));
+  return rooms.filter((room) => bookedRoomIds.has(room.id));
+}
+
+export function bookingDateLabelStep(dayCount: number) {
+  if (dayCount <= 10) return 1;
+  if (dayCount <= 21) return 2;
+  if (dayCount <= 45) return 4;
+  return 7;
+}
+
+export function summarizeRoomTypeAvailability(payload: FrontDeskReservationsPayload): RoomTypeAvailability[] {
+  const dates = buildBookingBoardDates(payload.rangeStart, payload.rangeEnd);
+  const tonightEnd = dateFromOffset(payload.rangeStart, 1);
+  const roomsByType = new Map<string, Room[]>();
+  payload.rooms.forEach((room) => {
+    const rows = roomsByType.get(room.roomType) ?? [];
+    rows.push(room);
+    roomsByType.set(room.roomType, rows);
+  });
+
+  return [...roomsByType.entries()]
+    .map(([roomType, rooms]) => {
+      const sellableRooms = rooms.filter((room) => room.status === "ready" || room.status === "available");
+      const reservationsForRooms = payload.reservations.filter((reservation) => rooms.some((room) => room.id === reservation.roomId));
+      const availableTonight = sellableRooms.filter((room) =>
+        reservationsForRooms.every((reservation) => reservation.roomId !== room.id || !reservationOverlaps(reservation, payload.rangeStart, tonightEnd)),
+      ).length;
+      const longestOpenNights = sellableRooms.reduce((longest, room) => {
+        const roomReservations = reservationsForRooms
+          .filter((reservation) => reservation.roomId === room.id && reservation.checkOut > payload.rangeStart)
+          .sort((left, right) => left.checkIn.localeCompare(right.checkIn));
+        const firstBlocking = roomReservations.find((reservation) => reservation.checkOut > payload.rangeStart);
+        const openNights = firstBlocking
+          ? Math.max(0, Math.min(dates.length, daysBetween(payload.rangeStart, firstBlocking.checkIn)))
+          : dates.length;
+        return Math.max(longest, openNights);
+      }, 0);
+      const nextBlockedDate =
+        reservationsForRooms
+          .filter((reservation) => reservation.checkIn >= payload.rangeStart)
+          .sort((left, right) => left.checkIn.localeCompare(right.checkIn))[0]?.checkIn ?? null;
+
+      return {
+        roomType,
+        totalRooms: rooms.length,
+        readyNow: sellableRooms.length,
+        availableTonight,
+        longestOpenNights,
+        nextBlockedDate,
+      };
+    })
+    .sort((left, right) => right.availableTonight - left.availableTonight || right.readyNow - left.readyNow || left.roomType.localeCompare(right.roomType));
+}
+
+function reservationOverlaps(reservation: ReservationSummary, rangeStart: string, rangeEnd: string) {
+  return reservation.checkIn < rangeEnd && reservation.checkOut > rangeStart;
+}
+
+function roomLabelList(rooms: Room[]) {
+  if (rooms.length === 0) return "None";
+  return rooms
+    .slice(0, 8)
+    .map((room) => `Room ${room.number}`)
+    .join(", ");
 }
 
 export function filterReservationsForFrontDesk(rows: ReservationSummary[], query: string, status: ReservationStatus | "all") {

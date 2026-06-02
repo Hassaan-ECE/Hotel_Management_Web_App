@@ -1147,3 +1147,73 @@ Notes:
 
 - Search remains hotel-scoped and keeps the existing API response shape.
 - Booking board ranges use an exclusive end date internally; the UI exposes start/end date inputs and updates the URL query.
+
+## 2026-06-02 Packets 22-27 Front Desk Booking Board And Readiness Polish
+
+Context:
+
+- User tested the deployed front-desk booking board and requested layout fixes, no default empty-room rows, compressed date ranges, clickable reservation entries, checkout confirmation, and a smarter room-readiness/availability section.
+- Updated the booking board controls and grid behavior, added a `Show empty rooms` option, linked table cells and board bars to reservation details, and added `/hotels/[hotelId]/front-desk/reservations/[reservationId]`.
+- Added checkout confirmation before status mutation and moved/rebuilt room readiness under the front-desk hub with room-type availability.
+
+Checks run:
+
+```powershell
+bun test --isolate test\front-desk-workflow-packet17.test.tsx
+```
+
+Result: passed. 14 tests passed with 48 assertions.
+
+```powershell
+bun run test
+```
+
+Result: passed. 111 tests passed across 14 files with 353 assertions.
+
+```powershell
+bun run typecheck
+```
+
+Result: passed.
+
+```powershell
+bun run lint
+```
+
+Result: passed.
+
+```powershell
+bun run build
+```
+
+Result: passed. Build output includes `/hotels/[hotelId]/front-desk/reservations/[reservationId]` and `Proxy (Middleware)`.
+
+```powershell
+git diff --check
+```
+
+Result: passed, with existing CRLF normalization warnings only.
+
+```powershell
+rg -n "[ \t]+$" docs\project-management src test
+```
+
+Result: passed with no matches.
+
+Additional local smoke:
+
+```powershell
+temporary demo-mode dev-server HTTP smoke
+```
+
+Result: passed. Authenticated demo session loaded the front-desk hub, confirmed `Room readiness and availability` and `Sellable by room type` rendered, loaded the reservations page with date controls, found reservation detail links, and loaded a reservation detail page.
+
+Browser visual pass:
+
+- Attempted to start the in-app browser runtime for screenshots.
+- The local Node REPL browser kernel exited before navigation with the same Windows sandbox setup failure seen in the previous packet, so no screenshot result is recorded for this pass.
+
+Notes:
+
+- Reservation detail loading is hotel-scoped in both production and demo paths.
+- Checkout confirmation is client-side UX only; the existing server transition guard remains the source of truth.

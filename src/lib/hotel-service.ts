@@ -25,6 +25,7 @@ import {
   demoLoadHousekeepingWork,
   demoLoadManagerDashboard,
   demoLoadPortfolio,
+  demoLoadReservationDetail,
   demoLoadTodayDesk,
   demoReportRoomIssue,
   demoSaveGuest,
@@ -477,6 +478,13 @@ export async function loadFrontDeskReservations(hotelId: string, rangeStart: str
     rooms,
     reservations: reservations.filter((reservation) => activeReservationStatuses.includes(reservation.status)),
   };
+}
+
+export async function loadReservationDetail(hotelId: string, reservationId: string): Promise<ReservationSummary> {
+  if (isDemoMode()) return demoLoadReservationDetail(hotelId, reservationId);
+  const reservation = (await queryReservations(hotelId, "AND r.id = $2", [reservationId]))[0];
+  if (!reservation) throw notFound("Reservation was not found for this hotel.");
+  return reservation;
 }
 
 export async function loadManagerDashboard(hotelId: string): Promise<ManagerDashboardPayload> {

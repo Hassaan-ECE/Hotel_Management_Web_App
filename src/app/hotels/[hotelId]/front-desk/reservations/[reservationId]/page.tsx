@@ -1,14 +1,15 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AppTopbar } from "@/components/app-topbar";
-import { FrontDeskHub } from "@/components/front-desk-workspace";
+import { ReservationDetailView } from "@/components/front-desk-workspace";
 import { SetupPanel } from "@/components/setup-panel";
 import { getIdentity, isClerkConfigured, isDemoMode, requireHotelSession } from "@/lib/authz";
 import { isDatabaseConfigured } from "@/lib/db";
-import { addDaysString, getHotel, loadFrontDeskReservations, loadHousekeepingSupervisor, loadTodayDesk } from "@/lib/hotel-service";
+import { getHotel, loadHousekeepingSupervisor, loadReservationDetail } from "@/lib/hotel-service";
 
 export const dynamic = "force-dynamic";
 
-export default async function FrontDeskPage({ params }: { params: Promise<{ hotelId: string }> }) {
+export default async function ReservationDetailPage({ params }: { params: Promise<{ hotelId: string; reservationId: string }> }) {
   const demoMode = isDemoMode();
   if (!demoMode && (!isClerkConfigured() || !isDatabaseConfigured())) {
     return <SetupPanel clerkConfigured={isClerkConfigured()} databaseConfigured={isDatabaseConfigured()} />;
@@ -17,14 +18,13 @@ export default async function FrontDeskPage({ params }: { params: Promise<{ hote
   const identity = await getIdentity();
   if (!identity) redirect("/sign-in");
 
-  const { hotelId } = await params;
+  const { hotelId, reservationId } = await params;
   const { session } = await requireHotelSession(hotelId, ["owner", "manager", "front-desk"]);
   const hotel = await getHotel(hotelId);
-  const [today, supervisor] = await Promise.all([
-    loadTodayDesk(hotelId),
+  const [reservation, supervisor] = await Promise.all([
+    loadReservationDetail(hotelId, reservationId),
     session.rolePreviewEnabled ? loadHousekeepingSupervisor(hotelId) : Promise.resolve(null),
   ]);
-  const availability = await loadFrontDeskReservations(hotelId, today.today, addDaysString(today.today, 14));
   const rolePreview = session.rolePreviewEnabled ? { hotelId, hotelName: hotel.name, session, housekeepers: supervisor?.housekeepers ?? [] } : undefined;
 
   return (
@@ -34,11 +34,19 @@ export default async function FrontDeskPage({ params }: { params: Promise<{ hote
         <div className="page-title">
           <div>
             <p className="eyebrow">Front desk</p>
-            <h1>{hotel.name}</h1>
-            <p className="muted">Guest search, walk-ins, and active reservation visibility.</p>
+            <h1>Reservation detail</h1>
+            <p className="muted">{hotel.name}</p>
+          </div>
+          <div className="actions">
+            <Link className="button" href={`/hotels/${hotel.id}/front-desk/reservations`}>
+              Reservations
+            </Link>
+            <Link className="button" href={`/hotels/${hotel.id}/front-desk`}>
+              Front desk
+            </Link>
           </div>
         </div>
-        <FrontDeskHub hotelId={hotel.id} hotelName={hotel.name} today={today} availability={availability} />
+        <ReservationDetailView hotelId={hotel.id} reservation={reservation} />
       </main>
     </div>
   );

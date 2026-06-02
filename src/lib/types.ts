@@ -155,6 +155,15 @@ export interface FrontDeskReservationsPayload {
   reservations: ReservationSummary[];
 }
 
+export interface RoomTypeAvailability {
+  roomType: string;
+  totalRooms: number;
+  readyNow: number;
+  availableTonight: number;
+  longestOpenNights: number;
+  nextBlockedDate: string | null;
+}
+
 export interface CountRow {
   label: string;
   count: number;

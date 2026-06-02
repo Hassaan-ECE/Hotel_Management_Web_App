@@ -119,6 +119,18 @@ Acceptance criteria:
 - Done: Active reservations can be filtered, sorted, checked in, and checked out from a dedicated table page.
 - Done: Booking board shows active reservation spans by room across a custom date range.
 
+### Front Desk Booking Board And Readiness Polish
+
+Status: completed on 2026-06-02.
+
+Acceptance criteria:
+
+- Done: Booking board date controls use inline labels with better spacing.
+- Done: Booking board hides empty rooms by default and compresses longer ranges instead of requiring drag/scroll.
+- Done: Reservation table entries and booking-board bars open a hotel-scoped reservation detail page.
+- Done: Check-out actions require confirmation before mutating reservation/room/housekeeping state.
+- Done: Front-desk hub room readiness moved below the main workflow and now summarizes ready-to-sell rooms, housekeeping needs, blocked rooms, departures, and room-type availability.
+
 ## P2
 
 ### API Contract Documentation
