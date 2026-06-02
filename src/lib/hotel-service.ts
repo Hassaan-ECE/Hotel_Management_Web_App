@@ -116,6 +116,44 @@ type AuditRow = AuditLogEntry;
 type HotelRow = Hotel;
 type GuestRow = Guest;
 
+function dateOnly(value: unknown) {
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  if (typeof value === "string") return value.includes("T") ? value.slice(0, 10) : value;
+  if (typeof value === "number") return new Date(value).toISOString().slice(0, 10);
+  return "";
+}
+
+function dateTime(value: unknown) {
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return new Date(value).toISOString();
+  return "";
+}
+
+function normalizeGuest(row: GuestRow): Guest {
+  return { ...row, createdAt: dateTime(row.createdAt) };
+}
+
+function normalizeReservation(row: ReservationRow): ReservationSummary {
+  return { ...row, checkIn: dateOnly(row.checkIn), checkOut: dateOnly(row.checkOut) };
+}
+
+function normalizeMaintenance(row: MaintenanceRow): MaintenanceTicket {
+  return { ...row, dueDate: dateOnly(row.dueDate) };
+}
+
+function normalizeBookingRequest(row: BookingRow): BookingRequest {
+  return { ...row, checkIn: dateOnly(row.checkIn), checkOut: dateOnly(row.checkOut) };
+}
+
+function normalizeHousekeeping(row: HkRow): HousekeepingTask {
+  return { ...row, dueDate: dateOnly(row.dueDate), updatedAt: dateTime(row.updatedAt) };
+}
+
+function normalizeAudit(row: AuditRow): AuditLogEntry {
+  return { ...row, createdAt: dateTime(row.createdAt) };
+}
+
 async function queryRooms(hotelId: string) {
   const sql = getSql();
   return sql<RoomRow[]>`
@@ -137,7 +175,7 @@ async function queryGuests(hotelId: string, whereSql = "", values: string[] = []
     `,
     [hotelId, ...values],
   );
-  return rows as unknown as GuestRow[];
+  return (rows as unknown as GuestRow[]).map(normalizeGuest);
 }
 
 async function queryReservations(hotelId: string, whereSql: string, values: string[] = []) {
@@ -170,7 +208,7 @@ async function queryReservations(hotelId: string, whereSql: string, values: stri
     `,
     params,
   );
-  return rows as unknown as ReservationRow[];
+  return (rows as unknown as ReservationRow[]).map(normalizeReservation);
 }
 
 async function queryMaintenance(hotelId: string, whereSql = "AND mt.status NOT IN ('resolved', 'cancelled')", values: unknown[] = []) {
@@ -185,7 +223,7 @@ async function queryMaintenance(hotelId: string, whereSql = "AND mt.status NOT I
     `,
     [hotelId, ...values],
   );
-  return rows as unknown as MaintenanceRow[];
+  return (rows as unknown as MaintenanceRow[]).map(normalizeMaintenance);
 }
 
 function isInactiveMaintenanceStatus(status: MaintenanceInput["status"]) {
@@ -254,17 +292,18 @@ async function queryHousekeeping(hotelId: string, whereSql = "AND ht.status NOT 
     `,
     [hotelId, ...values],
   );
-  return rows as unknown as HkRow[];
+  return (rows as unknown as HkRow[]).map(normalizeHousekeeping);
 }
 
 async function queryBookingRequests(hotelId: string) {
   const sql = getSql();
-  return sql<BookingRow[]>`
+  const rows = await sql<BookingRow[]>`
     SELECT id, full_name AS "fullName", phone, email, check_in AS "checkIn", check_out AS "checkOut", requested_room_type AS "requestedRoomType", status, message
     FROM booking_requests
     WHERE hotel_id = ${hotelId} AND status IN ('new', 'contacted')
     ORDER BY created_at ASC
   `;
+  return rows.map(normalizeBookingRequest);
 }
 
 async function queryStaff(hotelId: string, role = "housekeeping") {
@@ -279,13 +318,14 @@ async function queryStaff(hotelId: string, role = "housekeeping") {
 
 async function queryAudit(hotelId: string, limit = 12) {
   const sql = getSql();
-  return sql<AuditRow[]>`
+  const rows = await sql<AuditRow[]>`
     SELECT id, actor_role AS "actorRole", action, entity_type AS "entityType", entity_id AS "entityId", created_at AS "createdAt"
     FROM audit_logs
     WHERE hotel_id = ${hotelId}
     ORDER BY created_at DESC
     LIMIT ${limit}
   `;
+  return rows.map(normalizeAudit);
 }
 
 async function countNumber(sqlText: string, params: string[]) {
@@ -472,9 +512,9 @@ export async function searchFrontDesk(hotelId: string, query: string, limit = 25
     ),
   ]);
   return {
-    guests: guests as unknown as Guest[],
+    guests: (guests as unknown as GuestRow[]).map(normalizeGuest),
     rooms: rooms as unknown as Room[],
-    reservations: reservations as unknown as ReservationSummary[],
+    reservations: (reservations as unknown as ReservationRow[]).map(normalizeReservation),
   };
 }
 

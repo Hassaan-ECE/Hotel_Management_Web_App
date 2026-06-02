@@ -1075,21 +1075,63 @@ button.primary:hover,
 }
 
 @media (max-width: 760px) {
-  .topbar,
   .page-title {
     grid-template-columns: 1fr;
     align-items: stretch;
   }
 
-  .topbar,
   .page-title,
   .actions {
     flex-direction: column;
   }
 
-  .actions .button,
-  .actions button {
+  .page-title .actions .button,
+  .page-title .actions button {
     width: 100%;
+  }
+
+  .topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  .topbar .brand {
+    gap: 8px;
+  }
+
+  .topbar .brand-mark {
+    width: 34px;
+    height: 34px;
+  }
+
+  .topbar .brand-text span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .topbar .brand-text small {
+    display: none;
+  }
+
+  .topbar .actions {
+    flex-flow: row nowrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  .topbar .actions .button,
+  .topbar .actions button {
+    width: auto;
+    min-width: 38px;
+    padding-inline: 10px;
+  }
+
+  .topbar .button-label {
+    display: none;
   }
 
   .container {

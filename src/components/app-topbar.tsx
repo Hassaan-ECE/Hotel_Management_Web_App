@@ -27,18 +27,24 @@ export async function AppTopbar() {
         </span>
       </Link>
       <nav className="actions">
-        <Link className="button" href={homeHref}><Building2 size={16} /> {homeLabel}</Link>
+        <Link className="button" href={homeHref} aria-label={homeLabel}>
+          <Building2 size={16} /> <span className="button-label">{homeLabel}</span>
+        </Link>
         {demoMode && identity ? (
           <>
             <span className="status-pill">{identity.displayName}</span>
             <DemoLogoutButton />
           </>
         ) : demoMode ? (
-          <Link className="button" href="/sign-in"><LogIn size={16} /> Demo sign in</Link>
+          <Link className="button" href="/sign-in" aria-label="Demo sign in">
+            <LogIn size={16} /> <span className="button-label">Demo sign in</span>
+          </Link>
         ) : isClerkConfigured() ? (
           <UserButton />
         ) : (
-          <Link className="button" href="/sign-in"><LogIn size={16} /> Sign in</Link>
+          <Link className="button" href="/sign-in" aria-label="Sign in">
+            <LogIn size={16} /> <span className="button-label">Sign in</span>
+          </Link>
         )}
       </nav>
     </header>

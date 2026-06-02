@@ -4,7 +4,7 @@ Last updated: 2026-06-01
 
 ## Sprint Goal
 
-Stabilize the hosted app foundation before expanding product scope. Tenant isolation, input hardening, workflow guards, test foundation, hosted setup docs, clean-copy release-gate verification, deterministic font builds, pilot auth provisioning docs, hosted staging migration/seed validation, invite-only auth routing UX, and the hosted Clerk middleware/mobile sign-in hotfix are now in place.
+Stabilize the hosted app foundation before expanding product scope. Tenant isolation, input hardening, workflow guards, test foundation, hosted setup docs, clean-copy release-gate verification, deterministic font builds, pilot auth provisioning docs, hosted staging migration/seed validation, invite-only auth routing UX, hosted Clerk middleware/mobile sign-in hotfix, and hosted hotel dashboard date/mobile-topbar fixes are now in place.
 
 ## Current Acceptance Criteria
 
@@ -18,6 +18,8 @@ Stabilize the hosted app foundation before expanding product scope. Tenant isola
 - Signed-in real-Clerk users do not remain on `/sign-in`, and signed-in users without active hotel memberships see a clear no-access state.
 - Hosted Clerk sign-in can resolve server identity after sign-in without a `/sign-in` and `/portfolio` redirect loop.
 - The sign-in page fits iPhone 15 Pro Max width without horizontal overflow.
+- Hotel workspace payload dates are normalized before React rendering so Neon `Date` objects cannot crash the dashboard.
+- Mobile topbar keeps brand, workspace navigation, and account controls on one compact row.
 
 ## Next Implementation Packets
 
@@ -271,6 +273,27 @@ Acceptance criteria:
 - Done: Preserve invite-only sign-in and `/portfolio` redirect behavior.
 - Done: Constrain the Clerk sign-in card and auth panel so mobile widths do not overflow.
 - Done: Add regression coverage proving middleware is exported and sign-in uses responsive auth classes.
+- Done: Run test, typecheck, lint, build, and whitespace checks before deployment.
+
+### Packet 12 - Hosted Hotel Dashboard Date Crash And Mobile Topbar
+
+Status: completed on 2026-06-01.
+
+Owner: manager implements and verifies.
+
+Likely files:
+
+- `src/lib/hotel-service.ts`
+- `src/components/app-topbar.tsx`
+- `src/app/globals.css`
+- `test/date-normalization-packet12.test.ts`
+- PM docs.
+
+Acceptance criteria:
+
+- Done: Normalize SQL `date` and `timestamp` outputs to strings before returning hotel dashboard payloads.
+- Done: Cover Neon-style `Date` rows with a focused service regression test.
+- Done: Keep the signed-in mobile topbar to one compact row with brand, workspace/home action, and account control.
 - Done: Run test, typecheck, lint, build, and whitespace checks before deployment.
 
 ## Manager Review Focus

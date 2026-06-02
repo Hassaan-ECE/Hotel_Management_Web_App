@@ -843,3 +843,43 @@ Notes:
 - Added `middleware.ts` with `clerkMiddleware()`.
 - Added `test/middleware-packet11.test.ts` and expanded page-routing coverage for responsive auth classes.
 - Mobile sign-in CSS now constrains Clerk root/card boxes to the panel width and prevents horizontal overflow.
+
+## 2026-06-01 Packet 12 Hosted Hotel Dashboard Date Crash And Mobile Topbar
+
+Context:
+
+- Hosted production smoke testing reached the portfolio, but clicking into a hotel showed minified React error #31 with `[object Date]`.
+- React error #31 means an object was rendered as a React child; the dashboard payload expected date strings while Neon/SQL rows can provide JavaScript `Date` objects.
+- The signed-in mobile topbar also stacked awkwardly on iPhone 15 Pro Max.
+
+Checks run:
+
+```powershell
+bun run test
+```
+
+Result: passed. 73 tests passed across 8 files with 240 assertions.
+
+```powershell
+bun run typecheck
+```
+
+Result: passed.
+
+```powershell
+bun run lint
+```
+
+Result: passed.
+
+```powershell
+bun run build
+```
+
+Result: passed. Build output still included `Proxy (Middleware)`.
+
+Notes:
+
+- Added service-layer normalization for guest, reservation, booking-request, housekeeping, maintenance, and audit date fields.
+- Added `test/date-normalization-packet12.test.ts` to cover Neon-style `Date` rows before React rendering.
+- Updated the mobile topbar to keep brand, workspace/home action, and account controls on one compact row.
