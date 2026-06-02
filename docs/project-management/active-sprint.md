@@ -554,6 +554,20 @@ Acceptance criteria:
 - Done: Remove the `Available rooms` side panel from the walk-in page while keeping the room selector in the form.
 - Done: Keep the table/board toggle for now while evaluating whether the board can become the primary reservations view.
 
+### Packet 29 - Booking Board Absolute Timeline And Walk-In Form UX
+
+Status: completed on 2026-06-02.
+
+Owner: manager implements and verifies.
+
+Acceptance criteria:
+
+- Done: Render booking bars as absolute spans over one shared percentage timeline instead of grid-column children competing with date cells.
+- Done: Clamp out-of-range reservations to the selected date range and mark clipped start/end edges.
+- Done: Square off clipped bar edges so users can tell a stay began before or continues after the visible range.
+- Done: Rework the walk-in form into Guest, Stay, and Rate/notes sections.
+- Done: Keep check-in/check-out fields responsive so they do not overlap on the walk-in page.
+
 ## Manager Review Focus
 
 - Do not broaden scope into room-state schema work during release-foundation cleanup.

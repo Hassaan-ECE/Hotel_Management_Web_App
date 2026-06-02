@@ -166,6 +166,7 @@ svg {
 
 .login-form label,
 .form-grid label,
+.walk-in-form label,
 .inline-form label,
 .maintenance-ticket-form label {
   display: grid;
@@ -178,10 +179,13 @@ svg {
 .login-form input,
 .form-grid input,
 .form-grid select,
+.walk-in-form input,
+.walk-in-form select,
 .inline-form input,
 .maintenance-ticket-form input,
 .maintenance-ticket-form select {
   width: 100%;
+  min-width: 0;
   min-height: 42px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -194,6 +198,8 @@ svg {
 .login-form input:focus,
 .form-grid input:focus,
 .form-grid select:focus,
+.walk-in-form input:focus,
+.walk-in-form select:focus,
 .inline-form input:focus,
 .maintenance-ticket-form input:focus,
 .maintenance-ticket-form select:focus {
@@ -674,6 +680,48 @@ svg {
   padding-inline: 12px;
 }
 
+.walk-in-form {
+  display: grid;
+  gap: 14px;
+}
+
+.walk-in-section {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel-soft);
+  padding: 13px;
+}
+
+.walk-in-section legend {
+  padding: 0 6px;
+  color: var(--foreground);
+  font-size: 0.86rem;
+  font-weight: 850;
+}
+
+.walk-in-field-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.walk-in-stay-grid {
+  grid-template-columns: minmax(190px, 1.4fr) repeat(4, minmax(112px, 0.75fr));
+}
+
+.walk-in-wide-field {
+  grid-column: span 2;
+}
+
+.walk-in-form > .primary-button {
+  justify-self: start;
+  min-width: min(240px, 100%);
+}
+
 .reservation-controls {
   margin-bottom: 14px;
 }
@@ -716,6 +764,7 @@ svg {
 
 .booking-row-timeline {
   position: relative;
+  min-height: 54px;
 }
 
 .booking-room-header,
@@ -760,14 +809,17 @@ svg {
 }
 
 .booking-bar {
-  position: relative;
+  position: absolute;
+  left: var(--booking-bar-left);
+  right: var(--booking-bar-right);
+  top: 8px;
+  bottom: 8px;
   z-index: 1;
-  align-self: center;
   min-width: 0;
   display: grid;
+  align-content: center;
   gap: 2px;
-  min-height: 34px;
-  margin: 8px 4px;
+  min-height: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--panel-soft);
@@ -776,6 +828,18 @@ svg {
   overflow: hidden;
   box-shadow: 0 8px 18px rgba(14, 14, 14, 0.1);
   text-decoration: none;
+}
+
+.booking-bar.clipped-start {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left-width: 3px;
+}
+
+.booking-bar.clipped-end {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right-width: 3px;
 }
 
 .booking-bar strong,
@@ -1692,6 +1756,8 @@ button.primary:hover,
   .result-grid,
   .front-desk-actions,
   .form-grid,
+  .walk-in-field-grid,
+  .walk-in-stay-grid,
   .inline-form,
   .maintenance-ticket-form {
     grid-template-columns: 1fr;
@@ -1781,9 +1847,19 @@ button.primary:hover,
   }
 
   .booking-bar {
+    top: 9px;
+    bottom: 9px;
     min-height: 30px;
     padding: 5px 6px;
     font-size: 0.72rem;
+  }
+
+  .walk-in-wide-field {
+    grid-column: auto;
+  }
+
+  .walk-in-form > .primary-button {
+    width: 100%;
   }
 
   .readiness-snapshot {

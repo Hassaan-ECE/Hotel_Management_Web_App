@@ -1281,3 +1281,69 @@ Result: passed. Authenticated demo session loaded the walk-in page without the `
 Notes:
 
 - The table/booking-board toggle remains in place for now while the booking board is evaluated as a possible primary reservations view.
+
+## 2026-06-02 Packet 29 Booking Board Absolute Timeline And Walk-In Form UX
+
+Context:
+
+- User reported that the booking board still looked broken after the shared-grid pass and requested bars that clearly touch the date-range edge when the stay starts before or ends after the selected range.
+- Replaced grid-column reservation bars with absolute-positioned bars over one shared percentage timeline.
+- Added clipped-start/clipped-end styling for reservations that continue outside the visible date range.
+- Reworked the walk-in form into Guest, Stay, and Rate/notes sections so check-in/check-out inputs do not overlap and the page is easier to extend for payments later.
+
+Checks run:
+
+```powershell
+bun test --isolate test\front-desk-workflow-packet17.test.tsx
+```
+
+Result: passed. 16 tests passed with 57 assertions.
+
+```powershell
+bun run test
+```
+
+Result: passed. 113 tests passed across 14 files with 362 assertions.
+
+```powershell
+bun run typecheck
+```
+
+Result: passed.
+
+```powershell
+bun run lint
+```
+
+Result: passed.
+
+```powershell
+bun run build
+```
+
+Result: passed.
+
+```powershell
+git diff --check
+```
+
+Result: passed, with existing CRLF normalization warnings only.
+
+```powershell
+rg -n "[ \t]+$" docs\project-management src test
+```
+
+Result: passed with no matches.
+
+Additional local smoke:
+
+```powershell
+temporary demo-mode dev-server HTTP smoke
+```
+
+Result: passed for server-rendered pages. Authenticated demo session loaded the walk-in page, confirmed Guest / Stay / Rate and notes sections, confirmed the `Available rooms` side panel was absent, and loaded the reservations route. Booking board visual state remains covered by component rendering tests because the board is behind the client-side view toggle.
+
+Notes:
+
+- Table/booking-board toggle remains in place while testing continues.
+- Clipped range-edge behavior is tested with synthetic reservations that start before and end after the selected date range.

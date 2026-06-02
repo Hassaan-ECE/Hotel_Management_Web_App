@@ -371,57 +371,72 @@ function WalkInForm({
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   return (
-    <form className="form-grid walk-in-form" onSubmit={onSubmit}>
-      <label>
-        Guest name
-        <input name="fullName" required />
-      </label>
-      <label>
-        Phone
-        <input name="phone" />
-      </label>
-      <label>
-        Email
-        <input name="email" />
-      </label>
-      <label>
-        Room
-        <select name="roomId" required>
-          {rooms.map((room) => (
-            <option key={room.id} value={room.id}>
-              Room {room.number} - {room.roomType}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        Check in
-        <input name="checkIn" type="date" defaultValue={today} required />
-      </label>
-      <label>
-        Check out
-        <input name="checkOut" type="date" defaultValue={today} required />
-      </label>
-      <label>
-        Adults
-        <input name="adults" type="number" min="1" defaultValue="1" />
-      </label>
-      <label>
-        Children
-        <input name="children" type="number" min="0" defaultValue="0" />
-      </label>
-      <label>
-        Nightly rate cents
-        <input name="nightlyRateCents" type="number" min="0" defaultValue={rooms[0]?.nightlyRateCents ?? 0} />
-      </label>
-      <label>
-        Guest notes
-        <input name="guestNotes" />
-      </label>
-      <label className="full-row">
-        Reservation notes
-        <input name="notes" />
-      </label>
+    <form className="walk-in-form" onSubmit={onSubmit}>
+      <fieldset className="walk-in-section">
+        <legend>Guest</legend>
+        <div className="walk-in-field-grid">
+          <label>
+            Guest name
+            <input name="fullName" required />
+          </label>
+          <label>
+            Phone
+            <input name="phone" />
+          </label>
+          <label>
+            Email
+            <input name="email" />
+          </label>
+        </div>
+      </fieldset>
+      <fieldset className="walk-in-section">
+        <legend>Stay</legend>
+        <div className="walk-in-field-grid walk-in-stay-grid">
+          <label className="walk-in-room-field">
+            Room
+            <select name="roomId" required>
+              {rooms.map((room) => (
+                <option key={room.id} value={room.id}>
+                  Room {room.number} - {room.roomType}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Check in
+            <input name="checkIn" type="date" defaultValue={today} required />
+          </label>
+          <label>
+            Check out
+            <input name="checkOut" type="date" defaultValue={today} required />
+          </label>
+          <label>
+            Adults
+            <input name="adults" type="number" min="1" defaultValue="1" />
+          </label>
+          <label>
+            Children
+            <input name="children" type="number" min="0" defaultValue="0" />
+          </label>
+        </div>
+      </fieldset>
+      <fieldset className="walk-in-section">
+        <legend>Rate and notes</legend>
+        <div className="walk-in-field-grid">
+          <label>
+            Nightly rate cents
+            <input name="nightlyRateCents" type="number" min="0" defaultValue={rooms[0]?.nightlyRateCents ?? 0} />
+          </label>
+          <label>
+            Guest notes
+            <input name="guestNotes" />
+          </label>
+          <label className="walk-in-wide-field">
+            Reservation notes
+            <input name="notes" />
+          </label>
+        </div>
+      </fieldset>
       <button className="primary-button full-row" type="submit" disabled={pending}>
         <Save size={16} /> Create walk-in
       </button>
@@ -614,10 +629,10 @@ export function BookingBoard({
                 if (!span) return null;
                 return (
                   <Link
-                    className={`booking-bar status-${reservation.status}`}
+                    className={`booking-bar status-${reservation.status}${span.clippedStart ? " clipped-start" : ""}${span.clippedEnd ? " clipped-end" : ""}`}
                     href={reservationHref(hotelId, reservation.id)}
                     key={reservation.id}
-                    style={{ gridColumn: `${span.start + 1} / span ${span.span}`, gridRow: 1 }}
+                    style={bookingBarStyle(dates.length, span)}
                     title={`${reservation.guestName}, room ${reservation.roomNumber}, ${reservation.checkIn} to ${reservation.checkOut}`}
                     aria-label={`Open reservation for ${reservation.guestName} in room ${reservation.roomNumber}`}
                   >
@@ -910,14 +925,29 @@ export function bookingDateLabelStep(dayCount: number) {
 }
 
 export function bookingBoardSpan(rangeStart: string, dayCount: number, reservation: ReservationSummary) {
-  const start = Math.max(0, daysBetween(rangeStart, reservation.checkIn));
-  const end = Math.min(dayCount, daysBetween(rangeStart, reservation.checkOut));
+  const rawStart = daysBetween(rangeStart, reservation.checkIn);
+  const rawEnd = daysBetween(rangeStart, reservation.checkOut);
+  const start = Math.max(0, rawStart);
+  const end = Math.min(dayCount, rawEnd);
   if (end <= start) return null;
-  return { start, span: end - start };
+  return { start, end, span: end - start, clippedStart: rawStart < 0, clippedEnd: rawEnd > dayCount };
 }
 
 function bookingTimelineStyle(dayCount: number) {
   return { "--booking-day-count": String(dayCount) } as React.CSSProperties;
+}
+
+function bookingBarStyle(dayCount: number, span: NonNullable<ReturnType<typeof bookingBoardSpan>>) {
+  return {
+    "--booking-bar-left": toTimelinePercent(span.start, dayCount),
+    "--booking-bar-right": toTimelinePercent(dayCount - span.end, dayCount),
+  } as React.CSSProperties;
+}
+
+function toTimelinePercent(value: number, dayCount: number) {
+  if (dayCount <= 0) return "0%";
+  const percent = Math.max(0, Math.min(100, (value / dayCount) * 100));
+  return `${Number(percent.toFixed(4))}%`;
 }
 
 export function summarizeRoomTypeAvailability(payload: FrontDeskReservationsPayload): RoomTypeAvailability[] {

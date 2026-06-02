@@ -236,6 +236,7 @@ describe("packet 17 front-desk components", () => {
 
     expect(html.includes("Room 103")).toBe(false);
     expect(html.includes("booking-timeline")).toBe(true);
+    expect(html.includes("--booking-bar-left")).toBe(true);
     expect(html.includes("/hotels/hotel-1/front-desk/reservations/res-1")).toBe(true);
   });
 
@@ -246,8 +247,54 @@ describe("packet 17 front-desk components", () => {
   });
 
   test("booking board spans reservations on one shared date scale", () => {
-    expect(frontDeskComponents.bookingBoardSpan("2026-06-01", 14, reservationsPayload.reservations[1])).toEqual({ start: 0, span: 2 });
-    expect(frontDeskComponents.bookingBoardSpan("2026-06-01", 14, reservationsPayload.reservations[0])).toEqual({ start: 1, span: 2 });
+    expect(frontDeskComponents.bookingBoardSpan("2026-06-01", 14, reservationsPayload.reservations[1])).toEqual({
+      start: 0,
+      end: 2,
+      span: 2,
+      clippedStart: false,
+      clippedEnd: false,
+    });
+    expect(frontDeskComponents.bookingBoardSpan("2026-06-01", 14, reservationsPayload.reservations[0])).toEqual({
+      start: 1,
+      end: 3,
+      span: 2,
+      clippedStart: false,
+      clippedEnd: false,
+    });
+  });
+
+  test("booking board marks range-clipped reservations", () => {
+    const clippedStart = { ...reservationsPayload.reservations[1], checkIn: "2026-05-30", checkOut: "2026-06-03" };
+    const clippedEnd = { ...reservationsPayload.reservations[0], checkIn: "2026-06-13", checkOut: "2026-06-18" };
+
+    expect(frontDeskComponents.bookingBoardSpan("2026-06-01", 14, clippedStart)).toEqual({
+      start: 0,
+      end: 2,
+      span: 2,
+      clippedStart: true,
+      clippedEnd: false,
+    });
+    expect(frontDeskComponents.bookingBoardSpan("2026-06-01", 14, clippedEnd)).toEqual({
+      start: 12,
+      end: 14,
+      span: 2,
+      clippedStart: false,
+      clippedEnd: true,
+    });
+
+    const html = renderToStaticMarkup(
+      <frontDeskComponents.BookingBoard
+        hotelId="hotel-1"
+        hotelName="Packet Hotel"
+        rooms={rooms}
+        reservations={[clippedStart, clippedEnd]}
+        rangeStart="2026-06-01"
+        rangeEnd="2026-06-15"
+      />,
+    );
+
+    expect(html.includes("clipped-start")).toBe(true);
+    expect(html.includes("clipped-end")).toBe(true);
   });
 
   test("availability summary answers sellable room type questions", () => {
