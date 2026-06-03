@@ -77,8 +77,8 @@ Before a hosted pilot, also smoke these role flows in demo mode or staging:
 - Owner portfolio opens both demo hotels.
 - Front desk hub opens at `/hotels/<hotelId>/front-desk`, instant search updates while typing, and results are hotel-scoped.
 - Front desk walk-in opens at `/hotels/<hotelId>/front-desk/walk-in`, creates a checked-in reservation, and redirects to reservations.
-- Front desk reservations opens at `/hotels/<hotelId>/front-desk/reservations`; table search/filter/sort work, and check-in/check-out actions use the guarded status route.
-- Front desk booking board toggles from the reservations page, date range changes update the URL, empty room rows are hidden by default, longer ranges use one shared compressed timeline without horizontal dragging, reservation bars align to room/date spans, bars do not show duplicate date ranges, and bars clipped by the selected date range show obvious edge markers.
+- Front desk reservations opens at `/hotels/<hotelId>/front-desk/reservations`; booking board is the default, the table toggle remains available, table search/filter/sort work, and check-in/check-out actions use the guarded status route.
+- Front desk booking board defaults to a 7-day exclusive range starting today; date range changes update the URL, empty room rows are hidden by default, longer ranges use one shared compressed timeline without horizontal dragging, reservation bars align to room/date spans, bars show guest names only, and clipped bars have squared/thicker clipped-side edges.
 - Front desk reservation table entries and booking-board bars open `/hotels/<hotelId>/front-desk/reservations/<reservationId>`.
 - Front desk check-out action opens a confirmation dialog before moving the room to dirty and creating housekeeping turnover work.
 - Front desk hub room readiness appears under the main workflow and summarizes ready-to-sell rooms, housekeeping needs, blocked rooms, departures, and room-type availability.

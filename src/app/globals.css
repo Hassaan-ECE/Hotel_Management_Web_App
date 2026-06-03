@@ -764,40 +764,9 @@ svg {
   background: var(--panel);
 }
 
-.booking-board-legend {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-  margin-bottom: 10px;
-  color: var(--muted);
-  font-size: 0.74rem;
-  font-weight: 800;
-}
-
-.booking-board-legend span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.booking-legend-swatch {
-  width: 22px;
-  height: 12px;
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  background: var(--panel-soft);
-}
-
-.booking-legend-swatch.clipped {
-  border-color: color-mix(in srgb, var(--primary) 60%, var(--border));
-  background:
-    linear-gradient(90deg, var(--brand) 0 5px, var(--primary-soft) 5px calc(100% - 5px), var(--brand) calc(100% - 5px) 100%);
-}
-
 .booking-board-line {
   display: grid;
-  grid-template-columns: minmax(82px, 104px) minmax(0, 1fr);
+  grid-template-columns: minmax(64px, 76px) minmax(0, 1fr);
   width: 100%;
 }
 
@@ -809,7 +778,7 @@ svg {
 }
 
 .booking-board-row {
-  min-height: 54px;
+  min-height: 42px;
   border-top: 1px solid var(--border);
 }
 
@@ -821,22 +790,22 @@ svg {
 
 .booking-row-timeline {
   position: relative;
-  min-height: 54px;
+  min-height: 42px;
 }
 
 .booking-room-header,
 .booking-room-cell {
-  min-height: 42px;
+  min-height: 34px;
   border-right: 1px solid var(--border);
-  padding: 8px;
+  padding: 6px;
 }
 
 .booking-date-header,
 .booking-date-cell {
   min-width: 0;
-  min-height: 42px;
-  border-right: 1px solid var(--border);
-  padding: 8px 4px;
+  min-height: 34px;
+  border-right: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  padding: 6px 3px;
 }
 
 .booking-room-header,
@@ -869,94 +838,65 @@ svg {
   position: absolute;
   left: var(--booking-bar-left);
   right: var(--booking-bar-right);
-  top: 8px;
-  bottom: 8px;
+  top: 6px;
+  bottom: 6px;
   z-index: 1;
   min-width: 0;
-  display: grid;
-  align-content: center;
-  gap: 2px;
+  display: flex;
+  align-items: center;
   min-height: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--panel-soft);
   color: var(--foreground);
-  padding: 6px 8px;
+  padding: 4px 6px;
   overflow: hidden;
-  box-shadow: 0 8px 18px rgba(14, 14, 14, 0.1);
+  box-shadow: 0 5px 12px rgba(14, 14, 14, 0.08);
   text-decoration: none;
 }
 
 .booking-bar.clipped {
   border-color: color-mix(in srgb, var(--primary) 64%, var(--border));
-  box-shadow:
-    inset 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent),
-    0 8px 18px rgba(14, 14, 14, 0.12);
+  box-shadow: 0 5px 12px rgba(14, 14, 14, 0.1);
 }
 
 .booking-bar.clipped-start {
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
-  border-left-width: 0;
-  padding-left: 24px;
+  border-left-width: 4px;
 }
 
 .booking-bar.clipped-end {
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
-  border-right-width: 0;
-  padding-right: 24px;
+  border-right-width: 4px;
 }
 
-.booking-edge-tag {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  z-index: 2;
-  width: 18px;
-  display: grid;
-  place-items: center;
-  background: var(--brand);
-  color: var(--background);
-  font-size: 0.82rem;
-  font-weight: 900;
-  line-height: 1;
-}
-
-.booking-edge-tag.start {
-  left: 0;
-}
-
-.booking-edge-tag.end {
-  right: 0;
-}
-
-.booking-bar strong,
-.booking-bar-meta {
+.booking-bar strong {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.booking-bar-meta {
-  color: var(--muted);
-  font-size: 0.7rem;
   font-weight: 800;
 }
 
 .board-options {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 12px;
+  justify-content: flex-end;
+  margin-bottom: 8px;
 }
 
 .board-options label {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  min-height: 30px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel-soft);
+  padding: 5px 8px;
+  color: var(--muted);
+  font-size: 0.74rem;
   font-weight: 800;
 }
 
@@ -1935,20 +1875,15 @@ button.primary:hover,
     padding: 6px;
   }
 
-  .booking-room-cell span,
-  .booking-bar span {
+  .booking-room-cell span {
     display: none;
   }
 
-  .booking-bar .booking-edge-tag {
-    display: grid;
-  }
-
   .booking-bar {
-    top: 9px;
-    bottom: 9px;
-    min-height: 30px;
-    padding: 5px 6px;
+    top: 6px;
+    bottom: 6px;
+    min-height: 28px;
+    padding: 4px 5px;
     font-size: 0.72rem;
   }
 

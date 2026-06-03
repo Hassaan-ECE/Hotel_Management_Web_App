@@ -1410,3 +1410,63 @@ Notes:
 
 - Booking bars still link to hotel-scoped reservation detail pages.
 - The table/booking-board toggle remains in place while front-desk testing continues.
+
+## 2026-06-02 Packet 31 Booking Board Default And Compact Cleanup
+
+Context:
+
+- User rejected the explicit booking edge tags and visible booking-bar meta text.
+- Reservations page now defaults to the booking board while keeping the table toggle available.
+- The reservations route default range is now a 7-day exclusive window starting today.
+- Booking bars show guest names only; clipped bars keep squared edges with subtle thicker clipped-side borders.
+- Board rows, room column, booking bars, and the empty-room toggle were compacted.
+- The sort control now appears only while the table view is active.
+
+Checks run:
+
+```powershell
+bun test --isolate test\front-desk-workflow-packet17.test.tsx
+```
+
+Result: passed. 16 tests passed with 66 assertions.
+
+```powershell
+bun run test
+```
+
+Result: passed. 113 tests passed across 14 files with 371 assertions.
+
+```powershell
+bun run typecheck
+```
+
+Result: passed.
+
+```powershell
+bun run lint
+```
+
+Result: passed.
+
+```powershell
+bun run build
+```
+
+Result: passed.
+
+```powershell
+git diff --check
+```
+
+Result: passed, with existing CRLF normalization warnings only.
+
+```powershell
+rg -n "[ \t]+$" docs\project-management src test
+```
+
+Result: passed with no matches.
+
+Notes:
+
+- Reservation loading, authorization, status transitions, and reservation detail routes were not changed.
+- Table remains available as a secondary reservations view while front-desk testing continues.

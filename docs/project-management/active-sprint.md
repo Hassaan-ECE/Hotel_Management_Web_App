@@ -582,6 +582,21 @@ Acceptance criteria:
 - Done: Add booking-board legend and edge markers for reservations that start before or continue after the selected date range.
 - Done: Keep booking bars linked to reservation detail pages and preserve hotel-scoped data loading.
 
+### Packet 31 - Booking Board Default And Compact Cleanup
+
+Status: completed on 2026-06-02.
+
+Owner: manager implements and verifies.
+
+Acceptance criteria:
+
+- Done: Make the reservations page default to the booking board while keeping the table toggle available.
+- Done: Change the reservations route default to a 7-day exclusive range starting today.
+- Done: Remove booking-board legend, edge tags, and visible bar meta text.
+- Done: Keep clipped reservation edges squared with subtle thicker clipped-side borders.
+- Done: Compact booking-board rows, room column, bars, and the empty-room toggle.
+- Done: Show the table sort control only while the table view is active.
+
 ## Manager Review Focus
 
 - Do not broaden scope into room-state schema work during release-foundation cleanup.

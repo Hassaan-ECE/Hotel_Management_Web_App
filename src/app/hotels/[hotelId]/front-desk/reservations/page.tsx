@@ -28,8 +28,8 @@ export default async function ReservationsPage({
   const query = await searchParams;
   const today = todayString();
   const rangeStart = dateParam(query.start) ?? today;
-  const requestedRangeEnd = dateParam(query.end) ?? addDaysString(rangeStart, 14);
-  const rangeEnd = requestedRangeEnd > rangeStart ? requestedRangeEnd : addDaysString(rangeStart, 14);
+  const requestedRangeEnd = dateParam(query.end) ?? addDaysString(rangeStart, 7);
+  const rangeEnd = requestedRangeEnd > rangeStart ? requestedRangeEnd : addDaysString(rangeStart, 7);
 
   const { session } = await requireHotelSession(hotelId, ["owner", "manager", "front-desk"]);
   const hotel = await getHotel(hotelId);

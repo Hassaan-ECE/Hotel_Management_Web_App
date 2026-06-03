@@ -145,7 +145,7 @@ export function FrontDeskReservationsPage({
   payload: FrontDeskReservationsPayload;
 }) {
   const router = useRouter();
-  const [view, setView] = useState<"table" | "board">("table");
+  const [view, setView] = useState<"table" | "board">("board");
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<ReservationStatus | "all">("all");
   const [sortKey, setSortKey] = useState<SortKey>("checkIn");
@@ -156,9 +156,13 @@ export function FrontDeskReservationsPage({
   const [message, setMessage] = useState("");
   const [pending, startTransition] = useTransition();
 
-  const rows = useMemo(
-    () => sortReservationsForFrontDesk(filterReservationsForFrontDesk(payload.reservations, query, status), sortKey),
-    [payload.reservations, query, status, sortKey],
+  const filteredRows = useMemo(
+    () => filterReservationsForFrontDesk(payload.reservations, query, status),
+    [payload.reservations, query, status],
+  );
+  const tableRows = useMemo(
+    () => sortReservationsForFrontDesk(filteredRows, sortKey),
+    [filteredRows, sortKey],
   );
 
   function applyRange(event: FormEvent<HTMLFormElement>) {
@@ -241,19 +245,21 @@ export function FrontDeskReservationsPage({
               ))}
             </select>
           </label>
-          <label>
-            Sort
-            <select value={sortKey} onChange={(event) => setSortKey(event.target.value as SortKey)}>
-              <option value="checkIn">Check in</option>
-              <option value="checkOut">Check out</option>
-              <option value="guest">Guest</option>
-              <option value="room">Room</option>
-              <option value="status">Status</option>
-            </select>
-          </label>
+          {view === "table" ? (
+            <label>
+              Sort
+              <select value={sortKey} onChange={(event) => setSortKey(event.target.value as SortKey)}>
+                <option value="checkIn">Check in</option>
+                <option value="checkOut">Check out</option>
+                <option value="guest">Guest</option>
+                <option value="room">Room</option>
+                <option value="status">Status</option>
+              </select>
+            </label>
+          ) : null}
         </div>
         {view === "table" ? (
-          <ReservationTable hotelId={hotelId} rows={rows} pending={pending} onStatus={requestStatus} />
+          <ReservationTable hotelId={hotelId} rows={tableRows} pending={pending} onStatus={requestStatus} />
         ) : (
           <>
             <div className="board-options">
@@ -261,13 +267,12 @@ export function FrontDeskReservationsPage({
                 <input type="checkbox" checked={showAllRooms} onChange={(event) => setShowAllRooms(event.target.checked)} />
                 Show empty rooms
               </label>
-              <span className="muted">{showAllRooms ? "All rooms visible" : "Booked rooms only"}</span>
             </div>
             <BookingBoard
               hotelId={hotelId}
               hotelName={hotelName}
               rooms={payload.rooms}
-              reservations={rows}
+              reservations={filteredRows}
               rangeStart={payload.rangeStart}
               rangeEnd={payload.rangeEnd}
               showAllRooms={showAllRooms}
@@ -605,12 +610,7 @@ export function BookingBoard({
   const labelStep = bookingDateLabelStep(dates.length);
 
   return (
-    <>
-      <div className="booking-board-legend" aria-label="Booking board legend">
-        <span><span className="booking-legend-swatch" aria-hidden="true" /> Inside selected range</span>
-        <span><span className="booking-legend-swatch clipped" aria-hidden="true" /> Continues outside range</span>
-      </div>
-      <div className="booking-board" aria-label={`${hotelName} booking board`}>
+    <div className="booking-board" aria-label={`${hotelName} booking board`}>
       <div className="booking-board-line booking-board-header">
         <div className="booking-room-header">Room</div>
         <div className="booking-timeline booking-timeline-header" style={timelineStyle}>
@@ -642,13 +642,10 @@ export function BookingBoard({
                     href={reservationHref(hotelId, reservation.id)}
                     key={reservation.id}
                     style={bookingBarStyle(dates.length, span)}
-                    title={`${reservation.guestName}, room ${reservation.roomNumber}, ${bookingBarMeta(reservation, span)}`}
-                    aria-label={`Open reservation for ${reservation.guestName} in room ${reservation.roomNumber}. ${bookingBarMeta(reservation, span)}`}
+                    title={bookingBarTitle(reservation, span)}
+                    aria-label={`Open reservation for ${bookingBarTitle(reservation, span)}`}
                   >
-                    {span.clippedStart ? <span className="booking-edge-tag start" aria-hidden="true">{"<"}</span> : null}
                     <strong>{reservation.guestName}</strong>
-                    <span className="booking-bar-meta">{bookingBarMeta(reservation, span)}</span>
-                    {span.clippedEnd ? <span className="booking-edge-tag end" aria-hidden="true">{">"}</span> : null}
                   </Link>
                 );
               })}
@@ -656,8 +653,7 @@ export function BookingBoard({
           </div>
         );
       })}
-      </div>
-    </>
+    </div>
   );
 }
 
@@ -945,23 +941,9 @@ export function bookingBoardSpan(rangeStart: string, dayCount: number, reservati
   return { start, end, span: end - start, clippedStart: rawStart < 0, clippedEnd: rawEnd > dayCount };
 }
 
-function bookingBarMeta(reservation: ReservationSummary, span: NonNullable<ReturnType<typeof bookingBoardSpan>>) {
-  const status = reservationStatusLabel(reservation.status);
-  if (span.clippedStart && span.clippedEnd) return `${status} - continues before and after selected range`;
-  if (span.clippedStart) return `${status} - started before selected range`;
-  if (span.clippedEnd) return `${status} - continues after selected range`;
-  return status;
-}
-
-function reservationStatusLabel(status: ReservationStatus) {
-  const labels: Record<ReservationStatus, string> = {
-    pending: "Pending",
-    confirmed: "Confirmed",
-    "checked-in": "Checked in",
-    "checked-out": "Checked out",
-    cancelled: "Cancelled",
-  };
-  return labels[status];
+function bookingBarTitle(reservation: ReservationSummary, span: NonNullable<ReturnType<typeof bookingBoardSpan>>) {
+  const clippedNote = span.clippedStart || span.clippedEnd ? ", continues outside selected range" : "";
+  return `${reservation.guestName}, room ${reservation.roomNumber}, ${reservation.checkIn} to ${reservation.checkOut}${clippedNote}`;
 }
 
 function bookingTimelineStyle(dayCount: number) {

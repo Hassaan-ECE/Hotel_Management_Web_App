@@ -237,10 +237,11 @@ describe("packet 17 front-desk components", () => {
     );
 
     expect(html.includes("Room 103")).toBe(false);
-    expect(html.includes("Inside selected range")).toBe(true);
     expect(html.includes("booking-timeline")).toBe(true);
     expect(html.includes("--booking-bar-left")).toBe(true);
     expect(html.includes("2026-06-02 - 2026-06-04")).toBe(false);
+    expect(html.includes("booking-bar-meta")).toBe(false);
+    expect(html.includes("booking-edge-tag")).toBe(false);
     expect(html.includes("/hotels/hotel-1/front-desk/reservations/res-1")).toBe(true);
   });
 
@@ -299,10 +300,8 @@ describe("packet 17 front-desk components", () => {
 
     expect(html.includes("clipped-start")).toBe(true);
     expect(html.includes("clipped-end")).toBe(true);
-    expect(html.includes("booking-edge-tag start")).toBe(true);
-    expect(html.includes("booking-edge-tag end")).toBe(true);
-    expect(html.includes("started before selected range")).toBe(true);
-    expect(html.includes("continues after selected range")).toBe(true);
+    expect(html.includes("booking-edge-tag")).toBe(false);
+    expect(html.includes("booking-bar-meta")).toBe(false);
   });
 
   test("availability summary answers sellable room type questions", () => {
@@ -319,6 +318,8 @@ describe("packet 17 front-desk components", () => {
 
     expect(html.includes("Active reservations")).toBe(true);
     expect(html.includes("Booking board")).toBe(true);
+    expect(html.includes("Show empty rooms")).toBe(true);
+    expect(html.includes("Sort")).toBe(false);
     expect(html.includes("Jamie Morgan")).toBe(true);
     expect(html.includes("Taylor Brooks")).toBe(true);
     expect(html.includes("/hotels/hotel-1/front-desk/reservations/res-1")).toBe(true);
@@ -367,9 +368,9 @@ describe("packet 17 front-desk pages", () => {
     expect(requireHotelSessionCalls[0]).toEqual({ hotelId: "hotel-1", allowed: ["owner", "manager", "front-desk"] });
   });
 
-  test("reservations page defaults to a 14-day range and passes custom query ranges", async () => {
+  test("reservations page defaults to a 7-day exclusive range and passes custom query ranges", async () => {
     await ReservationsPage({ params: Promise.resolve({ hotelId: "hotel-1" }), searchParams: Promise.resolve({}) });
-    expect(loadFrontDeskReservationsCalls[0]).toEqual({ hotelId: "hotel-1", rangeStart: "2026-06-01", rangeEnd: "2026-06-15" });
+    expect(loadFrontDeskReservationsCalls[0]).toEqual({ hotelId: "hotel-1", rangeStart: "2026-06-01", rangeEnd: "2026-06-08" });
 
     loadFrontDeskReservationsCalls = [];
     const rendered = await ReservationsPage({
