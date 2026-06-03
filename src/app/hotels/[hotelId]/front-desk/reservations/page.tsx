@@ -41,23 +41,16 @@ export default async function ReservationsPage({
 
   return (
     <div className="page-shell">
-      <AppTopbar rolePreview={rolePreview} />
-      <main className="container stack">
-        <div className="page-title">
-          <div>
-            <p className="eyebrow">Front desk</p>
-            <h1>Arrivals / in-house</h1>
-            <p className="muted">{hotel.name}</p>
-          </div>
-          <div className="actions">
-            <Link className="button" href={`/hotels/${hotel.id}/front-desk`}>
-              Front desk
-            </Link>
-            <Link className="button" href={`/hotels/${hotel.id}/front-desk/walk-in`}>
-              Create walk-in
-            </Link>
-          </div>
-        </div>
+      <AppTopbar rolePreview={rolePreview} contextLabel="Reservations" contextDetail={hotel.name} />
+      <main className="container front-desk-container stack">
+        <nav className="front-desk-subnav" aria-label="Front desk navigation">
+          <Link className="button" href={`/hotels/${hotel.id}/front-desk`}>
+            Front desk
+          </Link>
+          <Link className="button" href={`/hotels/${hotel.id}/front-desk/walk-in`}>
+            Create walk-in
+          </Link>
+        </nav>
         <FrontDeskReservationsPage hotelId={hotel.id} hotelName={hotel.name} payload={payload} />
       </main>
     </div>

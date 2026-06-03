@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "smoke:local": "bun scripts/local-browser-smoke.ts",
     "test": "bun test --isolate",
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",

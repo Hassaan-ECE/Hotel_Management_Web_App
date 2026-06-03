@@ -29,15 +29,8 @@ export default async function FrontDeskPage({ params }: { params: Promise<{ hote
 
   return (
     <div className="page-shell">
-      <AppTopbar rolePreview={rolePreview} />
-      <main className="container stack">
-        <div className="page-title">
-          <div>
-            <p className="eyebrow">Front desk</p>
-            <h1>{hotel.name}</h1>
-            <p className="muted">Guest search, walk-ins, and active reservation visibility.</p>
-          </div>
-        </div>
+      <AppTopbar rolePreview={rolePreview} contextLabel="Front desk" contextDetail={hotel.name} />
+      <main className="container front-desk-container stack">
         <FrontDeskHub hotelId={hotel.id} hotelName={hotel.name} today={today} availability={availability} />
       </main>
     </div>

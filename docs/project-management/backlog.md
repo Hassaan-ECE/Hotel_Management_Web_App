@@ -118,6 +118,7 @@ Acceptance criteria:
 - Done: Walk-in creation no longer shares the main workspace layout and still auto-creates guests through the reservation workflow.
 - Done: Active reservations can be filtered, sorted, checked in, and checked out from a dedicated table page.
 - Done: Booking board shows active reservation spans by room across a custom date range.
+- Done: Reservations are now board-first, with the table retained as a secondary view.
 
 ### Front Desk Booking Board And Readiness Polish
 
@@ -131,6 +132,9 @@ Acceptance criteria:
 - Done: Booking board positions bars absolutely over the shared timeline and marks bars clipped by the selected range.
 - Done: Booking board is now the default reservations view with a compact 7-day range.
 - Done: Booking board bars show guest names only; clipped stays use subtle squared-edge borders instead of legends, arrows, or visible meta text.
+- Done: Booking-board room rows now show centered room numbers only, with compact centered guest-name bars.
+- Done: Reservations date range changes auto-update after valid start/end dates instead of using an Apply button.
+- Done: Front-desk page titles moved into the topbar context, and front-desk subnav/action controls stay compact on phone widths.
 - Done: Reservation table entries and booking-board bars open a hotel-scoped reservation detail page.
 - Done: Check-out actions require confirmation before mutating reservation/room/housekeeping state.
 - Done: Front-desk hub room readiness moved below the main workflow and now summarizes ready-to-sell rooms, housekeeping needs, blocked rooms, departures, and room-type availability.

@@ -165,11 +165,17 @@ export function FrontDeskReservationsPage({
     [filteredRows, sortKey],
   );
 
-  function applyRange(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const params = new URLSearchParams({ start: rangeStart, end: rangeEnd });
-    router.push(`/hotels/${hotelId}/front-desk/reservations?${params.toString()}`);
-  }
+  useEffect(() => {
+    if (!isDateString(rangeStart) || !isDateString(rangeEnd) || rangeEnd <= rangeStart) return;
+    if (rangeStart === payload.rangeStart && rangeEnd === payload.rangeEnd) return;
+
+    const timeoutId = window.setTimeout(() => {
+      const params = new URLSearchParams({ start: rangeStart, end: rangeEnd });
+      router.push(`/hotels/${hotelId}/front-desk/reservations?${params.toString()}`);
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [hotelId, payload.rangeEnd, payload.rangeStart, rangeEnd, rangeStart, router]);
 
   function updateStatus(id: string, nextStatus: ReservationStatus) {
     setMessage("");
@@ -211,31 +217,28 @@ export function FrontDeskReservationsPage({
             Booking board
           </button>
         </div>
-        <form className="date-range-form" onSubmit={applyRange}>
+        <div className="date-range-form" role="group" aria-label="Reservation date range">
           <label className="date-inline-label">
-            <span>Start</span>
+            <span className="sr-only">Start date</span>
             <input type="date" value={rangeStart} onChange={(event) => setRangeStart(event.target.value)} required />
           </label>
           <label className="date-inline-label">
-            <span>End</span>
+            <span className="sr-only">End date</span>
             <input type="date" value={rangeEnd} onChange={(event) => setRangeEnd(event.target.value)} required />
           </label>
-          <button className="secondary-button" type="submit">
-            Apply dates
-          </button>
-        </form>
+        </div>
       </div>
 
       {message ? <p className={statusMessageClassName(message)}>{message}</p> : null}
 
-      <Panel title="Active reservations">
+      <section className="reservations-surface">
         <div className="reservation-controls">
           <label>
-            Search
+            <span className="sr-only">Search reservations</span>
             <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Guest, phone, room, or reservation id" />
           </label>
           <label>
-            Status
+            <span className="sr-only">Reservation status</span>
             <select value={status} onChange={(event) => setStatus(event.target.value as ReservationStatus | "all")}>
               <option value="all">All active</option>
               {activeStatuses.map((option) => (
@@ -245,9 +248,15 @@ export function FrontDeskReservationsPage({
               ))}
             </select>
           </label>
+          {view === "board" ? (
+            <label className="compact-checkbox-control">
+              <input type="checkbox" checked={showAllRooms} onChange={(event) => setShowAllRooms(event.target.checked)} />
+              Show empty rooms
+            </label>
+          ) : null}
           {view === "table" ? (
             <label>
-              Sort
+              <span className="sr-only">Sort reservations</span>
               <select value={sortKey} onChange={(event) => setSortKey(event.target.value as SortKey)}>
                 <option value="checkIn">Check in</option>
                 <option value="checkOut">Check out</option>
@@ -261,25 +270,17 @@ export function FrontDeskReservationsPage({
         {view === "table" ? (
           <ReservationTable hotelId={hotelId} rows={tableRows} pending={pending} onStatus={requestStatus} />
         ) : (
-          <>
-            <div className="board-options">
-              <label>
-                <input type="checkbox" checked={showAllRooms} onChange={(event) => setShowAllRooms(event.target.checked)} />
-                Show empty rooms
-              </label>
-            </div>
-            <BookingBoard
-              hotelId={hotelId}
-              hotelName={hotelName}
-              rooms={payload.rooms}
-              reservations={filteredRows}
-              rangeStart={payload.rangeStart}
-              rangeEnd={payload.rangeEnd}
-              showAllRooms={showAllRooms}
-            />
-          </>
+          <BookingBoard
+            hotelId={hotelId}
+            hotelName={hotelName}
+            rooms={payload.rooms}
+            reservations={filteredRows}
+            rangeStart={payload.rangeStart}
+            rangeEnd={payload.rangeEnd}
+            showAllRooms={showAllRooms}
+          />
         )}
-      </Panel>
+      </section>
       <CheckoutConfirmDialog
         reservation={checkoutTarget}
         pending={pending}
@@ -614,11 +615,20 @@ export function BookingBoard({
       <div className="booking-board-line booking-board-header">
         <div className="booking-room-header">Room</div>
         <div className="booking-timeline booking-timeline-header" style={timelineStyle}>
-          {dates.map((date, index) => (
-            <div className="booking-date-header" key={date} title={date}>
-              {index % labelStep === 0 || index === dates.length - 1 ? date.slice(5) : ""}
-            </div>
-          ))}
+          {dates.map((date, index) => {
+            const label = bookingDateHeaderLabel(date);
+            const shouldShowLabel = index % labelStep === 0 || index === dates.length - 1;
+            return (
+              <div className="booking-date-header" key={date} title={date}>
+                {shouldShowLabel ? (
+                  <>
+                    <span>{label.weekday}</span>
+                    <strong>{label.day}</strong>
+                  </>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
       </div>
       {visibleRooms.map((room) => {
@@ -627,7 +637,6 @@ export function BookingBoard({
           <div className="booking-board-line booking-board-row" key={room.id}>
             <div className="booking-room-cell">
               <strong>{room.number}</strong>
-              <span>{room.roomType}</span>
             </div>
             <div className="booking-timeline booking-row-timeline" style={timelineStyle}>
               {dates.map((date) => (
@@ -919,6 +928,10 @@ function statusMessageClassName(message: string) {
   return normalized.includes("failed") || normalized.includes("cannot") ? "error-text" : "notice";
 }
 
+function isDateString(value: string) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`));
+}
+
 export function roomsForBookingBoard(rooms: Room[], reservations: ReservationSummary[], showAllRooms: boolean) {
   if (showAllRooms) return rooms;
   const bookedRoomIds = new Set(reservations.map((reservation) => reservation.roomId));
@@ -930,6 +943,15 @@ export function bookingDateLabelStep(dayCount: number) {
   if (dayCount <= 21) return 2;
   if (dayCount <= 45) return 4;
   return 7;
+}
+
+export function bookingDateHeaderLabel(date: string) {
+  const parsed = new Date(`${date}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) return { weekday: "", day: date.slice(8, 10) || date };
+  return {
+    weekday: parsed.toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" }),
+    day: parsed.toISOString().slice(8, 10),
+  };
 }
 
 export function bookingBoardSpan(rangeStart: string, dayCount: number, reservation: ReservationSummary) {

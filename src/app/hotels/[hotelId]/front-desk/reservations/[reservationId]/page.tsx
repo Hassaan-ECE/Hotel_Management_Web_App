@@ -29,23 +29,16 @@ export default async function ReservationDetailPage({ params }: { params: Promis
 
   return (
     <div className="page-shell">
-      <AppTopbar rolePreview={rolePreview} />
-      <main className="container stack">
-        <div className="page-title">
-          <div>
-            <p className="eyebrow">Front desk</p>
-            <h1>Reservation detail</h1>
-            <p className="muted">{hotel.name}</p>
-          </div>
-          <div className="actions">
-            <Link className="button" href={`/hotels/${hotel.id}/front-desk/reservations`}>
-              Reservations
-            </Link>
-            <Link className="button" href={`/hotels/${hotel.id}/front-desk`}>
-              Front desk
-            </Link>
-          </div>
-        </div>
+      <AppTopbar rolePreview={rolePreview} contextLabel="Reservation detail" contextDetail={hotel.name} />
+      <main className="container front-desk-container stack">
+        <nav className="front-desk-subnav" aria-label="Front desk navigation">
+          <Link className="button" href={`/hotels/${hotel.id}/front-desk/reservations`}>
+            Reservations
+          </Link>
+          <Link className="button" href={`/hotels/${hotel.id}/front-desk`}>
+            Front desk
+          </Link>
+        </nav>
         <ReservationDetailView hotelId={hotel.id} reservation={reservation} />
       </main>
     </div>

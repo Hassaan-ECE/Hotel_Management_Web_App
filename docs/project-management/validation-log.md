@@ -1,6 +1,6 @@
 # Validation Log
 
-Last updated: 2026-06-01
+Last updated: 2026-06-02
 
 ## 2026-06-01 Baseline
 
@@ -1470,3 +1470,68 @@ Notes:
 
 - Reservation loading, authorization, status transitions, and reservation detail routes were not changed.
 - Table remains available as a secondary reservations view while front-desk testing continues.
+
+## 2026-06-02 Packet 32 Front Desk Mobile Density And Header Cleanup
+
+Context:
+
+- Moved front-desk page context into the topbar for the hub, walk-in, reservations, and reservation detail routes.
+- Removed bulky front-desk page-title blocks and added compact subnav rows where needed.
+- Tightened the board-first reservations UI for mobile and desktop: room-number-only board cells, centered booking bars, compact status/empty-room controls, and no `Apply dates` button.
+- Reservation date range changes now auto-update the existing `?start=YYYY-MM-DD&end=YYYY-MM-DD` query after both dates are valid.
+
+Checks run:
+
+```powershell
+bun test --isolate test\front-desk-workflow-packet17.test.tsx
+```
+
+Result: passed. 16 tests passed with 77 assertions.
+
+```powershell
+bun run test
+```
+
+Result: passed. 113 tests passed across 14 files with 382 assertions.
+
+```powershell
+bun run typecheck
+```
+
+Result: passed.
+
+```powershell
+bun run lint
+```
+
+Result: passed.
+
+```powershell
+bun run build
+```
+
+Result: passed. Build output included the front-desk hub, reservations, reservation detail, and walk-in routes.
+
+```powershell
+git diff --check
+```
+
+Result: passed, with existing CRLF normalization warnings only.
+
+```powershell
+rg -n "[ \t]+$" docs\project-management src test
+```
+
+Result: passed with no matches.
+
+```powershell
+bun run smoke:local
+```
+
+Result: passed. The self-contained smoke command started Next dev in forced demo mode, logged in with demo front-desk code `2`, opened the hotel dashboard, front-desk hub, and reservations booking board, then saved `.tmp\local-browser-smoke-reservations.png`.
+
+Notes:
+
+- Reservation loading, authorization, status transitions, and database behavior were not changed.
+- Table remains available as a secondary reservations view while the booking board is the default reservations experience.
+- Local browser smoke now uses the self-contained `smoke:local` script instead of an ad hoc detached dev server or the Codex in-app browser.

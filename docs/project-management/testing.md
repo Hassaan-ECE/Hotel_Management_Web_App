@@ -12,6 +12,14 @@ bun run test
 
 The test script uses Bun's built-in test runner with per-file isolation. Keep isolation enabled because several tests use module mocks for server-only, auth, database, route, and page modules.
 
+For a local browser smoke test, run:
+
+```powershell
+bun run smoke:local
+```
+
+The smoke command starts `next dev` in demo mode on a temporary local port, drives headless Chrome or Edge through the demo front-desk login and reservations flow, saves a screenshot to `.tmp/local-browser-smoke-reservations.png`, and stops the server when it finishes. Set `LOCAL_SMOKE_BROWSER` when Chrome or Edge is installed in a non-standard location.
+
 ## What To Test
 
 Add service tests when a change affects domain behavior, data isolation, or state transitions in `src/lib/hotel-service.ts`.

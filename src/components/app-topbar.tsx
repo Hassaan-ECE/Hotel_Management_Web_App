@@ -4,7 +4,13 @@ import { AccountUserButton, type RolePreviewAccountContext } from "@/components/
 import { DemoLogoutButton } from "@/components/demo-logout-button";
 import { getIdentity, isClerkConfigured, isDemoMode, listMembershipsForUser } from "@/lib/authz";
 
-export async function AppTopbar({ rolePreview }: { rolePreview?: RolePreviewAccountContext } = {}) {
+type AppTopbarProps = {
+  rolePreview?: RolePreviewAccountContext;
+  contextLabel?: string;
+  contextDetail?: string;
+};
+
+export async function AppTopbar({ rolePreview, contextLabel, contextDetail }: AppTopbarProps = {}) {
   const demoMode = isDemoMode();
   const identity = await getIdentity();
   let homeHref = "/portfolio";
@@ -26,6 +32,12 @@ export async function AppTopbar({ rolePreview }: { rolePreview?: RolePreviewAcco
           <small>Hosted operations</small>
         </span>
       </Link>
+      {contextLabel ? (
+        <div className="topbar-context" aria-label={contextDetail ? `${contextLabel}, ${contextDetail}` : contextLabel}>
+          <strong>{contextLabel}</strong>
+          {contextDetail ? <span>{contextDetail}</span> : null}
+        </div>
+      ) : null}
       <nav className="actions">
         <Link className="button" href={homeHref} aria-label={homeLabel}>
           <Building2 size={16} /> <span className="button-label">{homeLabel}</span>

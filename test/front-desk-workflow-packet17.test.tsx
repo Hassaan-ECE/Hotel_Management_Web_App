@@ -121,7 +121,13 @@ mock.module("next/navigation", () => ({
 }));
 
 mock.module("@/components/app-topbar", () => ({
-  AppTopbar: () => <div>APP_TOPBAR</div>,
+  AppTopbar: ({ contextLabel, contextDetail }: { contextLabel?: string; contextDetail?: string }) => (
+    <div>
+      APP_TOPBAR
+      {contextLabel ? <span> {contextLabel}</span> : null}
+      {contextDetail ? <span> {contextDetail}</span> : null}
+    </div>
+  ),
 }));
 
 mock.module("@/components/setup-panel", () => ({
@@ -238,6 +244,9 @@ describe("packet 17 front-desk components", () => {
 
     expect(html.includes("Room 103")).toBe(false);
     expect(html.includes("booking-timeline")).toBe(true);
+    expect(html.includes("booking-room-cell")).toBe(true);
+    expect(html.includes("Double Queen")).toBe(false);
+    expect(html.includes("Mon")).toBe(true);
     expect(html.includes("--booking-bar-left")).toBe(true);
     expect(html.includes("2026-06-02 - 2026-06-04")).toBe(false);
     expect(html.includes("booking-bar-meta")).toBe(false);
@@ -316,9 +325,11 @@ describe("packet 17 front-desk components", () => {
   test("reservations component renders table and booking-board toggle", () => {
     const html = renderToStaticMarkup(<frontDeskComponents.FrontDeskReservationsPage hotelId="hotel-1" hotelName="Packet Hotel" payload={reservationsPayload} />);
 
-    expect(html.includes("Active reservations")).toBe(true);
+    expect(html.includes("Active reservations")).toBe(false);
     expect(html.includes("Booking board")).toBe(true);
     expect(html.includes("Show empty rooms")).toBe(true);
+    expect(html.includes("compact-checkbox-control")).toBe(true);
+    expect(html.includes("Apply dates")).toBe(false);
     expect(html.includes("Sort")).toBe(false);
     expect(html.includes("Jamie Morgan")).toBe(true);
     expect(html.includes("Taylor Brooks")).toBe(true);
@@ -355,6 +366,8 @@ describe("packet 17 front-desk pages", () => {
 
     expect(html.includes("APP_TOPBAR")).toBe(true);
     expect(html.includes("Front desk")).toBe(true);
+    expect(html.includes("Packet Hotel")).toBe(true);
+    expect(html.includes("page-title")).toBe(false);
     expect(requireHotelSessionCalls[0]).toEqual({ hotelId: "hotel-1", allowed: ["owner", "manager", "front-desk"] });
     expect(loadFrontDeskReservationsCalls[0]).toEqual({ hotelId: "hotel-1", rangeStart: "2026-06-01", rangeEnd: "2026-06-15" });
   });
@@ -365,6 +378,7 @@ describe("packet 17 front-desk pages", () => {
 
     expect(html.includes("Create walk-in")).toBe(true);
     expect(html.includes("Reservations")).toBe(true);
+    expect(html.includes("page-title")).toBe(false);
     expect(requireHotelSessionCalls[0]).toEqual({ hotelId: "hotel-1", allowed: ["owner", "manager", "front-desk"] });
   });
 
@@ -379,7 +393,9 @@ describe("packet 17 front-desk pages", () => {
     });
     const html = renderToStaticMarkup(rendered);
 
-    expect(html.includes("Arrivals / in-house")).toBe(true);
+    expect(html.includes("APP_TOPBAR")).toBe(true);
+    expect(html.includes("Reservations")).toBe(true);
+    expect(html.includes("page-title")).toBe(false);
     expect(loadFrontDeskReservationsCalls[0]).toEqual({ hotelId: "hotel-1", rangeStart: "2026-07-01", rangeEnd: "2026-07-20" });
     expect(requireHotelSessionCalls.at(-1)).toEqual({ hotelId: "hotel-1", allowed: ["owner", "manager", "front-desk"] });
   });
@@ -390,6 +406,7 @@ describe("packet 17 front-desk pages", () => {
 
     expect(html.includes("Reservation detail")).toBe(true);
     expect(html.includes("Jamie Morgan - Room 101")).toBe(true);
+    expect(html.includes("page-title")).toBe(false);
     expect(loadReservationDetailCalls[0]).toEqual({ hotelId: "hotel-1", reservationId: "res-1" });
     expect(requireHotelSessionCalls[0]).toEqual({ hotelId: "hotel-1", allowed: ["owner", "manager", "front-desk"] });
   });

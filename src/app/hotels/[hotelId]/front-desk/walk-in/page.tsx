@@ -29,23 +29,16 @@ export default async function WalkInPage({ params }: { params: Promise<{ hotelId
 
   return (
     <div className="page-shell">
-      <AppTopbar rolePreview={rolePreview} />
-      <main className="container stack">
-        <div className="page-title">
-          <div>
-            <p className="eyebrow">Front desk</p>
-            <h1>Create walk-in</h1>
-            <p className="muted">Create the guest and checked-in reservation together.</p>
-          </div>
-          <div className="actions">
-            <Link className="button" href={`/hotels/${hotel.id}/front-desk`}>
-              Front desk
-            </Link>
-            <Link className="button" href={`/hotels/${hotel.id}/front-desk/reservations`}>
-              Reservations
-            </Link>
-          </div>
-        </div>
+      <AppTopbar rolePreview={rolePreview} contextLabel="Create walk-in" contextDetail={hotel.name} />
+      <main className="container front-desk-container stack">
+        <nav className="front-desk-subnav" aria-label="Front desk navigation">
+          <Link className="button" href={`/hotels/${hotel.id}/front-desk`}>
+            Front desk
+          </Link>
+          <Link className="button" href={`/hotels/${hotel.id}/front-desk/reservations`}>
+            Reservations
+          </Link>
+        </nav>
         <FrontDeskWalkInPage hotelId={hotel.id} today={today.today} rooms={today.rooms} />
       </main>
     </div>

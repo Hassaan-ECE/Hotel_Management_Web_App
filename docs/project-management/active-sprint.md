@@ -4,7 +4,7 @@ Last updated: 2026-06-02
 
 ## Sprint Goal
 
-Stabilize the hosted app foundation before expanding product scope. Tenant isolation, input hardening, workflow guards, test foundation, hosted setup docs, clean-copy release-gate verification, deterministic font builds, pilot auth provisioning docs, hosted staging migration/seed validation, invite-only auth routing UX, hosted Clerk middleware/mobile sign-in hotfix, hosted hotel dashboard date/mobile-topbar fixes, mobile dashboard density/export placement polish, admin/export naming polish, gated Admin role preview, account-modal role preview placement, and front-desk workflow split are now in place.
+Stabilize the hosted app foundation before expanding product scope. Tenant isolation, input hardening, workflow guards, test foundation, hosted setup docs, clean-copy release-gate verification, deterministic font builds, pilot auth provisioning docs, hosted staging migration/seed validation, invite-only auth routing UX, hosted Clerk middleware/mobile sign-in hotfix, hosted hotel dashboard date/mobile-topbar fixes, mobile dashboard density/export placement polish, admin/export naming polish, gated Admin role preview, account-modal role preview placement, front-desk workflow split, and compact mobile front-desk polish are now in place.
 
 ## Current Acceptance Criteria
 
@@ -28,6 +28,8 @@ Stabilize the hosted app foundation before expanding product scope. Tenant isola
 - Front-desk search updates while typing and ranks exact, prefix, and all-token matches without a database extension.
 - Walk-in creation lives on its own page and still auto-creates guest records through the reservation workflow.
 - Active reservations have a sortable/filterable table and a booking-board view with custom date ranges.
+- Front-desk routes use topbar context labels instead of bulky page title blocks, and reservation date ranges auto-update after valid start/end changes.
+- Booking-board room rows are compact and consistent on mobile, with centered room numbers and centered guest-name bars.
 
 ## Next Implementation Packets
 
@@ -473,7 +475,7 @@ Owner: manager implements and verifies.
 
 Acceptance criteria:
 
-- Done: Keep Start/End labels inline with their date inputs and add spacing before Apply dates.
+- Done: Keep Start/End labels inline with their date inputs and avoid date-control overlap.
 - Done: Hide empty room rows by default, with a `Show empty rooms` option for full inventory review.
 - Done: Align reservation bars on the same grid row as their room labels.
 - Done: Compress date columns into the board width instead of relying on horizontal dragging.
@@ -596,6 +598,20 @@ Acceptance criteria:
 - Done: Keep clipped reservation edges squared with subtle thicker clipped-side borders.
 - Done: Compact booking-board rows, room column, bars, and the empty-room toggle.
 - Done: Show the table sort control only while the table view is active.
+
+### Packet 32 - Front Desk Mobile Density And Header Cleanup
+
+Status: completed on 2026-06-02.
+
+Owner: manager implements and verifies.
+
+Acceptance criteria:
+
+- Done: Front-desk hub, walk-in, reservations, and reservation detail pages pass compact topbar context labels and no longer render bulky page-title blocks.
+- Done: Front-desk subnav and hub action cards remain side-by-side on mobile with tighter spacing.
+- Done: Booking-board room cells show only centered room numbers, and bars keep a fixed compact height with centered guest names.
+- Done: Reservations controls use an unframed compact surface, hide visible labels while preserving accessible labels, and place `Show empty rooms` beside Status.
+- Done: Reservation date ranges auto-update the existing `?start=YYYY-MM-DD&end=YYYY-MM-DD` query after both dates are valid, with no `Apply dates` button.
 
 ## Manager Review Focus
 
